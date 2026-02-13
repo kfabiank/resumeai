@@ -50,90 +50,23 @@ export default function ResumeEditorPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    // Load resume from API
-    // In production, this would fetch from your API
-    setIsLoading(false);
-    
-    // Mock data for demo
-    const mockResume = {
-      id,
-      title: "Software Engineer Resume",
-      atsScore: 92,
-      content: {
-        personalInfo: {
-          name: "John Doe",
-          email: "john@example.com",
-          phone: "(555) 123-4567",
-          location: "San Francisco, CA",
-          linkedin: "linkedin.com/in/johndoe",
-          portfolio: "johndoe.com",
-          headline: "Senior Software Engineer",
-        },
-        professionalSummary:
-          "Results-driven Software Engineer with 5+ years of experience building scalable web applications. Proven track record of leading cross-functional teams and delivering high-impact projects. Expert in React, Node.js, and cloud technologies.",
-        experiences: [
-          {
-            title: "Senior Software Engineer",
-            company: "Tech Corp",
-            location: "San Francisco, CA",
-            startDate: "2021-06",
-            current: true,
-            optimizedBullets: [
-              "Led development of microservices architecture serving 10M+ users, improving system reliability by 40%",
-              "Implemented CI/CD pipeline reducing deployment time from 2 hours to 15 minutes",
-              "Mentored team of 5 junior developers, resulting in 30% increase in team velocity",
-              "Architected real-time data processing system handling 1M+ events per day",
-            ],
-            keywordsUsed: ["React", "Node.js", "microservices", "CI/CD"],
-          },
-          {
-            title: "Software Engineer",
-            company: "Startup Inc",
-            location: "San Francisco, CA",
-            startDate: "2019-01",
-            endDate: "2021-05",
-            current: false,
-            optimizedBullets: [
-              "Developed React-based dashboard reducing customer support tickets by 25%",
-              "Optimized database queries improving application performance by 60%",
-              "Collaborated with product team to launch 3 major features ahead of schedule",
-            ],
-            keywordsUsed: ["React", "performance", "dashboard"],
-          },
-        ],
-        education: [
-          {
-            degree: "Bachelor of Science in Computer Science",
-            institution: "Stanford University",
-            location: "Stanford, CA",
-            graduationDate: "2018-05",
-            gpa: "3.8",
-          },
-        ],
-        skills: {
-          technical: [
-            "React",
-            "Node.js",
-            "TypeScript",
-            "Python",
-            "AWS",
-            "Docker",
-            "PostgreSQL",
-            "MongoDB",
-          ],
-          soft: [
-            "Leadership",
-            "Communication",
-            "Problem Solving",
-            "Team Collaboration",
-          ],
-        },
-        keywords: ["React", "Node.js", "microservices", "AWS", "leadership"],
-      },
+    if (!id) return;
+
+    const fetchResume = async () => {
+      try {
+        const response = await fetch(`/api/resume/${id}`);
+        if (!response.ok) throw new Error('Resume not found');
+        const data = await response.json();
+        setResume(data);
+        setContent(data.content);
+      } catch (error) {
+        console.error('Failed to load resume:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    setResume(mockResume);
-    setContent(mockResume.content);
+
+    fetchResume();
   }, [id]);
 
   const handleSave = async () => {

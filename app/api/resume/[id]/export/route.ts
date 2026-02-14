@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAuthSession } from '@/lib/auth';
+import jsPDF from 'jspdf';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getAuthSession();
+    const currentUserId = session?.user?.id;
+    if (!currentUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
 
     // Get resume from database
@@ -19,20 +27,124 @@ export async function POST(
         { status: 404 }
       );
     }
+    if (resume.userId !== currentUserId) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
 
-    // In production, you would use a library like:
-    // - jsPDF
-    // - Puppeteer
-    // - react-pdf
-    // - PDFKit
-    
-    // For now, return mock response
-    // The actual PDF generation would happen here
+    const content = resume.content as any;
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4',
+    });
 
-    return NextResponse.json({
-      success: true,
-      message: 'PDF generation started',
-      downloadUrl: '/mock-resume.pdf', // In production, this would be a real URL
+    const pageWidth = 595;
+    const pageHeight = 842;
+    const left = 50;
+    const right = 50;
+    const maxWidth = pageWidth - left - right;
+    let y = 60;
+
+    const ensureSpace = (needed = 24) => {
+      if (y + needed > pageHeight - 50) {
+        doc.addPage();
+        y = 60;
+      }
+    };
+
+    const writeText = (text: string, size = 11, style: 'normal' | 'bold' = 'normal', gap = 8) => {
+      const safe = String(text || '').trim();
+      if (!safe) return;
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      const lines = doc.splitTextToSize(safe, maxWidth);
+      ensureSpace(lines.length * (size + 2) + gap);
+      doc.text(lines, left, y);
+      y += lines.length * (size + 2) + gap;
+    };
+
+    const sectionTitle = (title: string) => {
+      ensureSpace(24);
+      doc.setDrawColor(200, 200, 200);
+      doc.line(left, y, pageWidth - right, y);
+      y += 16;
+      writeText(title, 12, 'bold', 6);
+    };
+
+    const name = content?.personalInfo?.name || resume.title || 'Resume';
+    const headline = content?.personalInfo?.headline || '';
+    const contactLine = [
+      content?.personalInfo?.email,
+      content?.personalInfo?.phone,
+      content?.personalInfo?.location,
+      content?.personalInfo?.linkedin,
+      content?.personalInfo?.portfolio,
+    ]
+      .filter(Boolean)
+      .join('  |  ');
+
+    writeText(name, 24, 'bold', 8);
+    writeText(headline, 13, 'normal', 4);
+    writeText(contactLine, 10, 'normal', 14);
+
+    sectionTitle('PROFESSIONAL SUMMARY');
+    writeText(content?.professionalSummary || '', 11, 'normal', 10);
+
+    sectionTitle('EXPERIENCE');
+    const experiences = Array.isArray(content?.experiences) ? content.experiences : [];
+    for (const exp of experiences) {
+      const period = `${exp?.startDate || ''}${exp?.current ? ' - Present' : exp?.endDate ? ` - ${exp.endDate}` : ''}`;
+      writeText(`${exp?.title || ''} - ${exp?.company || ''}`, 12, 'bold', 4);
+      writeText(period, 10, 'normal', 6);
+      const bullets = Array.isArray(exp?.optimizedBullets) ? exp.optimizedBullets : [];
+      for (const bullet of bullets) {
+        writeText(`- ${bullet}`, 10, 'normal', 4);
+      }
+      y += 6;
+    }
+
+    sectionTitle('EDUCATION');
+    const education = Array.isArray(content?.education) ? content.education : [];
+    for (const edu of education) {
+      writeText(`${edu?.degree || ''} - ${edu?.institution || ''}`, 11, 'bold', 4);
+      writeText(
+        [edu?.graduationDate, edu?.location, edu?.gpa ? `GPA ${edu.gpa}` : null].filter(Boolean).join(' | '),
+        10,
+        'normal',
+        8
+      );
+    }
+
+    sectionTitle('SKILLS');
+    const technical = Array.isArray(content?.skills?.technical) ? content.skills.technical.join(', ') : '';
+    const soft = Array.isArray(content?.skills?.soft) ? content.skills.soft.join(', ') : '';
+    writeText(`Technical: ${technical}`, 10, 'normal', 6);
+    writeText(`Soft: ${soft}`, 10, 'normal', 10);
+
+    await prisma.usageLog.create({
+      data: {
+        userId: currentUserId,
+        actionType: 'resume_exported',
+        metadata: {
+          resumeId: resume.id,
+          format: 'pdf',
+        },
+      },
+    });
+
+    const fileName = `${resume.title || 'resume'}`.replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'resume';
+    const pdfArrayBuffer = doc.output('arraybuffer');
+
+    return new NextResponse(pdfArrayBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${fileName}.pdf"`,
+        'Cache-Control': 'no-store',
+      },
     });
   } catch (error) {
     console.error('Error exporting PDF:', error);
@@ -42,121 +154,3 @@ export async function POST(
     );
   }
 }
-
-/**
- * Example PDF generation function using jsPDF
- * Uncomment and use in production
- */
-/*
-import jsPDF from 'jspdf';
-
-function generatePDF(resume: any) {
-  const doc = new jsPDF();
-  const content = resume.content;
-  
-  // Header
-  doc.setFontSize(24);
-  doc.text(content.personalInfo.name, 105, 20, { align: 'center' });
-  
-  doc.setFontSize(12);
-  doc.text(content.personalInfo.headline || '', 105, 30, { align: 'center' });
-  
-  // Contact info
-  doc.setFontSize(10);
-  doc.text(
-    `${content.personalInfo.email} | ${content.personalInfo.phone}`,
-    105,
-    38,
-    { align: 'center' }
-  );
-  
-  let yPosition = 50;
-  
-  // Professional Summary
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('PROFESSIONAL SUMMARY', 20, yPosition);
-  yPosition += 7;
-  
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  const summaryLines = doc.splitTextToSize(content.professionalSummary, 170);
-  doc.text(summaryLines, 20, yPosition);
-  yPosition += summaryLines.length * 5 + 10;
-  
-  // Experience
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('EXPERIENCE', 20, yPosition);
-  yPosition += 7;
-  
-  content.experiences.forEach((exp: any) => {
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text(exp.title, 20, yPosition);
-    
-    doc.setFont(undefined, 'normal');
-    doc.text(exp.company, 120, yPosition);
-    yPosition += 5;
-    
-    doc.setFontSize(9);
-    doc.text(
-      `${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}`,
-      20,
-      yPosition
-    );
-    yPosition += 5;
-    
-    exp.optimizedBullets.forEach((bullet: string) => {
-      const bulletLines = doc.splitTextToSize(`• ${bullet}`, 165);
-      doc.text(bulletLines, 25, yPosition);
-      yPosition += bulletLines.length * 4 + 2;
-    });
-    
-    yPosition += 5;
-    
-    // Check if we need a new page
-    if (yPosition > 270) {
-      doc.addPage();
-      yPosition = 20;
-    }
-  });
-  
-  // Education
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('EDUCATION', 20, yPosition);
-  yPosition += 7;
-  
-  content.education.forEach((edu: any) => {
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.text(edu.degree, 20, yPosition);
-    
-    doc.setFont(undefined, 'normal');
-    doc.text(edu.institution, 120, yPosition);
-    yPosition += 5;
-    
-    doc.setFontSize(9);
-    doc.text(edu.graduationDate, 20, yPosition);
-    if (edu.gpa) {
-      doc.text(`GPA: ${edu.gpa}`, 120, yPosition);
-    }
-    yPosition += 8;
-  });
-  
-  // Skills
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('SKILLS', 20, yPosition);
-  yPosition += 7;
-  
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Technical: ${content.skills.technical.join(', ')}`, 20, yPosition);
-  yPosition += 5;
-  doc.text(`Soft Skills: ${content.skills.soft.join(', ')}`, 20, yPosition);
-  
-  return doc.output('blob');
-}
-*/

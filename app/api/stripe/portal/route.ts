@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
+import { getAuthSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId } = body;
-
-    // For demo purposes, use a mock user ID if not provided
-    const currentUserId = userId || 'demo-user-123';
+    const authSession = await getAuthSession();
+    const currentUserId = authSession?.user?.id;
+    if (!currentUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Get user
     const user = await prisma.user.findUnique({
@@ -23,13 +24,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe Customer Portal session
-    const session = await stripe.billingPortal.sessions.create({
+    const portalSession = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
     });
 
     return NextResponse.json({
-      url: session.url,
+      url: portalSession.url,
     });
   } catch (error: any) {
     console.error('Stripe portal error:', error);

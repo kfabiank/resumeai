@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PLANS } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
+import { getAuthSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const authSession = await getAuthSession();
+    const currentUserId = authSession?.user?.id;
+    if (!currentUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { plan, billingPeriod, userId } = body;
+    const { plan, billingPeriod } = body;
 
     if (!plan || !billingPeriod) {
       return NextResponse.json(
@@ -22,23 +29,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For demo purposes, use a mock user ID if not provided
-    const currentUserId = userId || 'demo-user-123';
-
-    // Get or create user
-    let user = await prisma.user.findUnique({
+    // Get current user
+    const user = await prisma.user.findUnique({
       where: { id: currentUserId },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          id: currentUserId,
-          email: 'demo@example.com',
-          name: 'Demo User',
-          planType: 'free',
-        },
-      });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get or create Stripe customer
@@ -85,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -111,8 +108,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      sessionId: session.id,
-      url: session.url,
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url,
     });
   } catch (error: any) {
     console.error('Stripe checkout error:', error);

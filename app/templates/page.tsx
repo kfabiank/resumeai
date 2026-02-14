@@ -1,86 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FileText, Check, Lock, Eye, Star } from "lucide-react";
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  thumbnail: string;
-  isPremium: boolean;
-  isPopular?: boolean;
-}
-
-const templates: Template[] = [
-  {
-    id: "modern-professional",
-    name: "Modern Professional",
-    description: "Clean and contemporary design perfect for corporate roles",
-    category: "professional",
-    thumbnail: "/templates/modern-professional.png",
-    isPremium: false,
-    isPopular: true,
-  },
-  {
-    id: "tech-minimal",
-    name: "Tech Minimal",
-    description: "Sleek design optimized for tech and startup positions",
-    category: "tech",
-    thumbnail: "/templates/tech-minimal.png",
-    isPremium: false,
-  },
-  {
-    id: "executive-classic",
-    name: "Executive Classic",
-    description: "Elegant template for senior leadership positions",
-    category: "executive",
-    thumbnail: "/templates/executive-classic.png",
-    isPremium: true,
-  },
-  {
-    id: "creative-bold",
-    name: "Creative Bold",
-    description: "Stand out with this eye-catching creative design",
-    category: "creative",
-    thumbnail: "/templates/creative-bold.png",
-    isPremium: true,
-  },
-  {
-    id: "academic-formal",
-    name: "Academic Formal",
-    description: "Traditional format for academic and research positions",
-    category: "academic",
-    thumbnail: "/templates/academic-formal.png",
-    isPremium: false,
-  },
-  {
-    id: "startup-modern",
-    name: "Startup Modern",
-    description: "Dynamic template perfect for fast-paced environments",
-    category: "tech",
-    thumbnail: "/templates/startup-modern.png",
-    isPremium: true,
-  },
-  {
-    id: "consultant-pro",
-    name: "Consultant Pro",
-    description: "Professional template for consulting and advisory roles",
-    category: "professional",
-    thumbnail: "/templates/consultant-pro.png",
-    isPremium: true,
-  },
-  {
-    id: "simple-clean",
-    name: "Simple Clean",
-    description: "Minimalist design that lets your experience shine",
-    category: "modern",
-    thumbnail: "/templates/simple-clean.png",
-    isPremium: false,
-  },
-];
+import {
+  isTemplateId,
+  TEMPLATE_CATALOG,
+  type TemplateCatalogItem,
+} from "@/lib/template-catalog";
+import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
+import type { ResumeData } from "@/types/resume";
 
 const categories = [
   { id: "all", name: "All Templates" },
@@ -92,9 +22,96 @@ const categories = [
   { id: "modern", name: "Modern" },
 ];
 
+const CATEGORY_ORDER: Record<string, number> = {
+  professional: 1,
+  tech: 2,
+  creative: 3,
+  executive: 4,
+  academic: 5,
+  modern: 6,
+};
+
+const NEW_TEMPLATE_IDS = new Set([
+  "accountant-template",
+  "consultant-template",
+  "data-science-template",
+  "devops-template",
+  "finance-template",
+  "frontend-template",
+  "legal-template",
+  "marketing-template",
+  "medical-template",
+  "nurse-template",
+  "paralegal-template",
+  "product-manager-template",
+  "sales-template",
+  "startup-template",
+  "ux-designer-template",
+]);
+
+const PREVIEW_DATA: ResumeData = {
+  personalInfo: {
+    name: "Fabian Moya",
+    email: "kfabiank@gmail.com",
+    phone: "+1 555 234 8891",
+    location: "Miami, FL",
+    headline: "Senior Full-Stack Engineer",
+    linkedin: "linkedin.com/in/fabian",
+    portfolio: "fabian.dev",
+  },
+  professionalSummary:
+    "Senior Full-Stack Engineer with 8+ years building SaaS platforms. Strong in Next.js, TypeScript, PostgreSQL, and cloud architecture.",
+  experiences: [
+    {
+      title: "Senior Full-Stack Engineer",
+      company: "ResumeAI",
+      startDate: "2023-01",
+      endDate: "",
+      current: true,
+      optimizedBullets: [
+        "Reduced p95 API latency by 40% via query optimization.",
+        "Improved paid conversion by 22% with billing flow redesign.",
+      ],
+      keywordsUsed: ["next.js", "prisma", "postgresql"],
+    },
+    {
+      title: "Full-Stack Engineer",
+      company: "TalentFlow",
+      startDate: "2020-05",
+      endDate: "2022-12",
+      current: false,
+      optimizedBullets: [
+        "Built recruiter dashboard used by 10k+ MAU.",
+      ],
+      keywordsUsed: ["react", "typescript"],
+    },
+  ],
+  education: [
+    {
+      degree: "B.S. Computer Science",
+      institution: "Florida International University",
+      graduationDate: "2018-05",
+      gpa: "3.7",
+    },
+  ],
+  skills: {
+    technical: ["TypeScript", "Next.js", "Node.js", "PostgreSQL", "AWS"],
+    soft: ["Leadership", "Communication", "Mentoring"],
+  },
+  keywords: ["SaaS", "ATS", "Optimization"],
+};
+
 export default function TemplatesPage() {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const queryTemplate = searchParams.get("template");
+    if (queryTemplate && isTemplateId(queryTemplate)) {
+      setSelectedTemplate(queryTemplate);
+    }
+  }, [searchParams]);
 
   // Mock user data
   const user = {
@@ -102,13 +119,28 @@ export default function TemplatesPage() {
     planType: "free",
   };
 
-  const filteredTemplates = selectedCategory === "all"
-    ? templates
-    : templates.filter(t => t.category === selectedCategory);
+  const filteredTemplates = (
+    selectedCategory === "all"
+      ? TEMPLATE_CATALOG
+      : TEMPLATE_CATALOG.filter((t) => t.category === selectedCategory)
+  ).slice().sort((a, b) => {
+    const aIsNew = NEW_TEMPLATE_IDS.has(a.id) ? 1 : 0;
+    const bIsNew = NEW_TEMPLATE_IDS.has(b.id) ? 1 : 0;
+    if (aIsNew !== bIsNew) return bIsNew - aIsNew;
+    const categoryDiff = (CATEGORY_ORDER[a.category] || 999) - (CATEGORY_ORDER[b.category] || 999);
+    if (categoryDiff !== 0) return categoryDiff;
+    return a.name.localeCompare(b.name);
+  });
 
-  const canUseTemplate = (template: Template) => {
+  const newTemplates = filteredTemplates.filter((t) => NEW_TEMPLATE_IDS.has(t.id));
+  const classicTemplates = filteredTemplates.filter((t) => !NEW_TEMPLATE_IDS.has(t.id));
+
+  const canUseTemplate = (template: TemplateCatalogItem) => {
     return !template.isPremium || user.planType !== "free";
   };
+  const selectedTemplateData = selectedTemplate
+    ? TEMPLATE_CATALOG.find((t) => t.id === selectedTemplate) || null
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -173,8 +205,187 @@ export default function TemplatesPage() {
         </div>
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredTemplates.map((template) => (
+        {selectedCategory === "all" && newTemplates.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">New Templates</h2>
+              <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                {newTemplates.length} new
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {newTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
+                    selectedTemplate === template.id
+                      ? "border-blue-500 ring-2 ring-blue-200"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {/* Template Preview */}
+                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
+                    <div className="absolute inset-0 overflow-hidden bg-white">
+                      <div className="origin-top-left scale-[0.28] w-[794px]">
+                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        New
+                      </span>
+                      {template.isPremium && (
+                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Pro
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+
+                    {canUseTemplate(template) ? (
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`w-full py-2 rounded-lg font-medium transition ${
+                          selectedTemplate === template.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
+                        }`}
+                      >
+                        {selectedTemplate === template.id ? (
+                          <span className="flex items-center justify-center">
+                            <Check className="h-4 w-4 mr-2" />
+                            Selected
+                          </span>
+                        ) : (
+                          "Select Template"
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Upgrade to Use
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === "all" && classicTemplates.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Classic Templates</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {classicTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
+                    selectedTemplate === template.id
+                      ? "border-blue-500 ring-2 ring-blue-200"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {/* Template Preview */}
+                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
+                    <div className="absolute inset-0 overflow-hidden bg-white">
+                      <div className="origin-top-left scale-[0.28] w-[794px]">
+                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      {template.isPopular && (
+                        <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Star className="h-3 w-3 mr-1" />
+                          Popular
+                        </span>
+                      )}
+                      {template.isPremium && (
+                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Pro
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+
+                    {canUseTemplate(template) ? (
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`w-full py-2 rounded-lg font-medium transition ${
+                          selectedTemplate === template.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
+                        }`}
+                      >
+                        {selectedTemplate === template.id ? (
+                          <span className="flex items-center justify-center">
+                            <Check className="h-4 w-4 mr-2" />
+                            Selected
+                          </span>
+                        ) : (
+                          "Select Template"
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Upgrade to Use
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedCategory !== "all" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredTemplates.map((template) => (
             <div
               key={template.id}
               className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
@@ -185,14 +396,19 @@ export default function TemplatesPage() {
             >
               {/* Template Preview */}
               <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                {/* Placeholder for template thumbnail */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-gray-50 to-gray-100">
-                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
-                  <span className="text-sm text-gray-500">{template.name}</span>
+                <div className="absolute inset-0 overflow-hidden bg-white">
+                  <div className="origin-top-left scale-[0.28] w-[794px]">
+                    <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+                  </div>
                 </div>
 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
+                  {NEW_TEMPLATE_IDS.has(template.id) && (
+                    <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      New
+                    </span>
+                  )}
                   {template.isPopular && (
                     <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
                       <Star className="h-3 w-3 mr-1" />
@@ -209,7 +425,10 @@ export default function TemplatesPage() {
 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition">
+                  <button
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </button>
@@ -250,16 +469,17 @@ export default function TemplatesPage() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Selected Template Action */}
-        {selectedTemplate && (
+        {selectedTemplateData && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">
-                  Selected: {templates.find(t => t.id === selectedTemplate)?.name}
+                  Selected: {selectedTemplateData.name}
                 </p>
                 <p className="text-sm text-gray-600">
                   Ready to create your resume with this template
@@ -272,12 +492,21 @@ export default function TemplatesPage() {
                 >
                   Cancel
                 </button>
-                <Link
-                  href={`/builder/new?template=${selectedTemplate}`}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  Use This Template
-                </Link>
+                {canUseTemplate(selectedTemplateData) ? (
+                  <Link
+                    href={`/builder/new?template=${selectedTemplateData.id}`}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Use This Template
+                  </Link>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                  >
+                    Upgrade to Use
+                  </Link>
+                )}
               </div>
             </div>
           </div>

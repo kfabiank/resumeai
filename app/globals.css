@@ -29,3 +29,13 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+@layer components {
+  .a4-page {
+    width: 100%;
+    max-width: 794px;
+    min-height: 1123px;
+    margin: 0 auto;
+    background: #ffffff;
+  }
+}

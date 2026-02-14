@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { paypalClient } from '@/lib/paypal';
 import { prisma } from '@/lib/prisma';
 import { SubscriptionsController } from '@paypal/paypal-server-sdk';
+import { getAuthSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+    const currentUserId = session?.user?.id;
+    if (!currentUserId) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/login`
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const subscriptionId = searchParams.get('subscription_id');
     const userId = searchParams.get('userId');
@@ -13,6 +22,11 @@ export async function GET(request: NextRequest) {
     if (!subscriptionId || !userId || !plan) {
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/pricing?error=missing_params`
+      );
+    }
+    if (userId !== currentUserId) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL}/pricing?error=invalid_user`
       );
     }
 

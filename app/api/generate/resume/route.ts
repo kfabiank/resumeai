@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateOptimizedResume, ResumeData } from '@/lib/ai-service';
+import { getAuthSession } from '@/lib/auth';
+import {
+  DEFAULT_TEMPLATE_ID,
+  getTemplateById,
+  isTemplateId,
+} from '@/lib/template-catalog';
+import { ensureTemplateExists } from '@/lib/template-db';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ResumeData = await request.json();
+    const session = await getAuthSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = (await request.json()) as ResumeData & { templateId?: string };
+    const rawTemplateId = body.templateId ?? '';
+    const selectedTemplateId = isTemplateId(rawTemplateId)
+      ? rawTemplateId
+      : DEFAULT_TEMPLATE_ID;
+    const selectedTemplate = getTemplateById(selectedTemplateId);
+
+    if (!selectedTemplate) {
+      return NextResponse.json({ error: 'Invalid template' }, { status: 400 });
+    }
 
     // Validate required fields
     if (!body.jobDescription || !body.personalInfo?.name) {
@@ -13,10 +35,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // For now, we'll use a mock user ID
-    // In production, get this from session/auth
-    const userId = 'demo-user-123';
 
     // Check user's plan limits
     const user = await prisma.user.findUnique({
@@ -28,22 +46,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // If user doesn't exist, create demo user
-    let currentUser = user;
-    if (!currentUser) {
-      currentUser = await prisma.user.create({
-        data: {
-          id: userId,
-          email: body.personalInfo.email,
-          name: body.personalInfo.name,
-          planType: 'free',
-        },
-        include: {
-          _count: {
-            select: { resumes: true },
-          },
-        },
-      });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check monthly limits
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
       premium: -1,
     };
 
-    const planLimit = limits[currentUser.planType as keyof typeof limits] || 3;
+    const planLimit = limits[user.planType as keyof typeof limits] || 3;
 
     if (planLimit !== -1 && resumesThisMonth >= planLimit) {
       return NextResponse.json(
@@ -100,6 +104,9 @@ export async function POST(request: NextRequest) {
       body.personalInfo.headline ||
       'Professional Resume';
 
+    // Ensure the selected template exists so the Resume -> Template relation is valid.
+    await ensureTemplateExists(selectedTemplate.id);
+
     // Create resume in database
     const resume = await prisma.resume.create({
       data: {
@@ -109,7 +116,7 @@ export async function POST(request: NextRequest) {
         jobDescription: body.jobDescription,
         jobUrl: body.jobUrl,
         content: resumeContent,
-        templateId: 'modern-professional', // Default template
+        templateId: selectedTemplate.id,
         atsScore: optimizedResume.atsScore,
         atsFeedback: {
           keywords: optimizedResume.keywords,

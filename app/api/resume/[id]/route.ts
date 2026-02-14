@@ -4,6 +4,7 @@ import { getAuthSession } from '@/lib/auth';
 import { isTemplateId } from '@/lib/template-catalog';
 import { getTemplateById } from '@/lib/template-catalog';
 import { ensureTemplateExists } from '@/lib/template-db';
+import { PLAN_FEATURES } from '@/lib/stripe';
 
 export async function GET(
   request: NextRequest,
@@ -103,7 +104,10 @@ export async function PATCH(
       if (!currentUser) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
-      if (tpl?.isPremium && currentUser.planType === 'free') {
+      const canUsePremiumTemplates =
+        PLAN_FEATURES[currentUser.planType as keyof typeof PLAN_FEATURES]
+          ?.premiumTemplates ?? false;
+      if (tpl?.isPremium && !canUsePremiumTemplates) {
         return NextResponse.json(
           { error: 'Upgrade required to use premium templates' },
           { status: 403 }

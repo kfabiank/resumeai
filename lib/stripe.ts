@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2024-06-20',
   typescript: true,
 });
 
@@ -44,3 +44,67 @@ export const PLANS = {
 } as const;
 
 export type PlanType = keyof typeof PLANS;
+export type PaidPlanType = Exclude<PlanType, 'free'>;
+export type BillingPeriod = 'monthly' | 'annual';
+
+export const PLAN_LIMITS = {
+  free: {
+    resumesPerMonth: 3,
+  },
+  pro: {
+    resumesPerMonth: -1,
+  },
+  premium: {
+    resumesPerMonth: -1,
+  },
+} as const;
+
+export const PLAN_FEATURES = {
+  free: {
+    premiumTemplates: false,
+    coverLetters: false,
+    docxExport: false,
+    jobTrackerLimit: 10,
+  },
+  pro: {
+    premiumTemplates: true,
+    coverLetters: true,
+    docxExport: true,
+    jobTrackerLimit: -1,
+  },
+  premium: {
+    premiumTemplates: true,
+    coverLetters: true,
+    docxExport: true,
+    jobTrackerLimit: -1,
+  },
+} as const;
+
+export function getConfiguredPriceId(
+  plan: PaidPlanType,
+  billingPeriod: BillingPeriod
+) {
+  const configured = PLANS[plan];
+  if (!('priceId' in configured)) return null;
+  const value = configured.priceId[billingPeriod];
+  return value || null;
+}
+
+export function getPlanByPriceId(priceId: string): {
+  plan: PaidPlanType;
+  billingPeriod: BillingPeriod;
+} | null {
+  const paidPlans: PaidPlanType[] = ['pro', 'premium'];
+  const periods: BillingPeriod[] = ['monthly', 'annual'];
+
+  for (const plan of paidPlans) {
+    for (const billingPeriod of periods) {
+      const configured = getConfiguredPriceId(plan, billingPeriod);
+      if (configured && configured === priceId) {
+        return { plan, billingPeriod };
+      }
+    }
+  }
+
+  return null;
+}

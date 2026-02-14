@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -13,21 +13,54 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+type BillingUser = {
+  name: string;
+  email: string;
+  planType: "free" | "pro" | "premium";
+  subscriptionStatus: string;
+  currentPeriodEnd: string | null;
+  stripeCustomerId: string;
+};
+
 export default function BillingPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<BillingUser | null>(null);
 
-  // Mock user data - in production, fetch from API/session
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-    planType: "pro", // "free", "pro", or "premium"
-    subscriptionStatus: "active",
-    currentPeriodEnd: new Date("2024-03-15"),
-    stripeCustomerId: "cus_xxx",
-  };
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Failed to load profile");
+        setUser({
+          name: body.name || "",
+          email: body.email || "",
+          planType: body.planType || "free",
+          subscriptionStatus: body.subscriptionStatus || "",
+          currentPeriodEnd: body.currentPeriodEnd || null,
+          stripeCustomerId: body.stripeCustomerId || "",
+        });
+      } catch (err: any) {
+        setError(err.message || "Failed to load billing profile");
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
 
-  const isPaidPlan = user.planType !== "free";
+    void loadProfile();
+  }, []);
+
+  const isPaidPlan = (user?.planType || "free") !== "free";
+  const periodEndDate = useMemo(
+    () => (user?.currentPeriodEnd ? new Date(user.currentPeriodEnd) : null),
+    [user?.currentPeriodEnd]
+  );
 
   const handleManageBilling = async () => {
     setIsLoading(true);
@@ -59,6 +92,14 @@ export default function BillingPage() {
       setIsLoading(false);
     }
   };
+
+  if (isProfileLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,8 +147,8 @@ export default function BillingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div
-                className={`p-3 rounded-lg ${
-                  user.planType === "premium"
+                  className={`p-3 rounded-lg ${
+                    user.planType === "premium"
                     ? "bg-purple-100"
                     : user.planType === "pro"
                     ? "bg-blue-100"
@@ -174,13 +215,13 @@ export default function BillingPage() {
             )}
           </div>
 
-          {isPaidPlan && user.currentPeriodEnd && (
+                  {isPaidPlan && user.currentPeriodEnd && (
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center text-sm text-gray-600">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span>
                   Next billing date:{" "}
-                  <strong>{user.currentPeriodEnd.toLocaleDateString()}</strong>
+                  <strong>{periodEndDate?.toLocaleDateString()}</strong>
                 </span>
               </div>
             </div>

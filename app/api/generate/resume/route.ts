@@ -7,6 +7,7 @@ import {
   getTemplateById,
   isTemplateId,
 } from '@/lib/template-catalog';
+import { PLAN_LIMITS } from '@/lib/stripe';
 import { ensureTemplateExists } from '@/lib/template-db';
 
 export async function POST(request: NextRequest) {
@@ -64,13 +65,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const limits = {
-      free: 3,
-      pro: -1, // unlimited
-      premium: -1,
-    };
-
-    const planLimit = limits[user.planType as keyof typeof limits] || 3;
+    const planLimit =
+      PLAN_LIMITS[user.planType as keyof typeof PLAN_LIMITS]?.resumesPerMonth ?? 3;
 
     if (planLimit !== -1 && resumesThisMonth >= planLimit) {
       return NextResponse.json(

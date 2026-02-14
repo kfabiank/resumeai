@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FileText, Check, Lock, Eye, Star } from "lucide-react";
+import TopNav from "@/components/top-nav";
+import { useDemoUser } from "@/hooks/use-demo-user";
 
 interface Template {
   id: string;
@@ -95,12 +97,7 @@ const categories = [
 export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    planType: "free",
-  };
+  const { user } = useDemoUser();
 
   const filteredTemplates = selectedCategory === "all"
     ? templates
@@ -112,41 +109,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/templates" className="text-blue-600 font-medium">
-                Templates
-              </Link>
-              <Link href="/tracker" className="text-gray-600 hover:text-gray-900">
-                Tracker
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopNav active="templates" user={user} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

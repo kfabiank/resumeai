@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -70,17 +70,88 @@ export default function PricingPage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [stripePlans, setStripePlans] = useState<
+    Record<
+      string,
+      {
+        priceId: string | null;
+        amount: number | null;
+        productName: string | null;
+      }
+    >
+  >({});
 
-  const prices = {
-    pro: { monthly: 12, annual: 9 },
-    premium: { monthly: 29, annual: 24 },
-  };
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const res = await fetch("/api/stripe/plans");
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Failed to load Stripe plans");
+
+        const mapped: Record<
+          string,
+          {
+            priceId: string | null;
+            amount: number | null;
+            productName: string | null;
+          }
+        > = {};
+
+        for (const plan of body.plans || []) {
+          mapped[`${plan.plan}:${plan.billingPeriod}`] = {
+            priceId: plan.priceId || null,
+            amount: typeof plan.unitAmount === "number" ? plan.unitAmount / 100 : null,
+            productName: plan.productName || null,
+          };
+        }
+
+        setStripePlans(mapped);
+      } catch (err: any) {
+        setError(err.message || "Failed to load Stripe plans");
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    void loadPlans();
+  }, []);
+
+  const prices = useMemo(
+    () => ({
+      pro: {
+        monthly: stripePlans["pro:monthly"]?.amount ?? 0,
+        annual: stripePlans["pro:annual"]?.amount ?? 0,
+        monthlyId: stripePlans["pro:monthly"]?.priceId ?? null,
+        annualId: stripePlans["pro:annual"]?.priceId ?? null,
+        name: stripePlans[`pro:${billingPeriod}`]?.productName || "Pro",
+      },
+      premium: {
+        monthly: stripePlans["premium:monthly"]?.amount ?? 0,
+        annual: stripePlans["premium:annual"]?.amount ?? 0,
+        monthlyId: stripePlans["premium:monthly"]?.priceId ?? null,
+        annualId: stripePlans["premium:annual"]?.priceId ?? null,
+        name: stripePlans[`premium:${billingPeriod}`]?.productName || "Premium",
+      },
+    }),
+    [billingPeriod, stripePlans]
+  );
 
   const handleSubscribe = async (plan: "pro" | "premium") => {
     setIsLoading(plan);
     setError(null);
 
     try {
+      const selectedPriceId =
+        billingPeriod === "monthly"
+          ? prices[plan].monthlyId
+          : prices[plan].annualId;
+
+      if (!selectedPriceId) {
+        setError(`No Stripe price configured for ${plan} (${billingPeriod}).`);
+        return;
+      }
+
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: {
@@ -89,6 +160,7 @@ export default function PricingPage() {
         body: JSON.stringify({
           plan,
           billingPeriod,
+          priceId: selectedPriceId,
         }),
       });
 
@@ -218,7 +290,7 @@ export default function PricingPage() {
 
             <div className="mb-6">
               <span className="text-4xl font-bold text-gray-900">$0</span>
-              <span className="text-gray-600">/month</span>
+              <span className="text-gray-600">{billingPeriod === "annual" ? "/year" : "/month"}</span>
             </div>
 
             <Link
@@ -266,7 +338,7 @@ export default function PricingPage() {
 
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                Pro
+                {prices.pro.name}
                 <Zap className="h-5 w-5 text-yellow-500 ml-2" />
               </h3>
               <p className="text-gray-600 text-sm">For active job seekers</p>
@@ -274,12 +346,12 @@ export default function PricingPage() {
 
             <div className="mb-6">
               <span className="text-4xl font-bold text-gray-900">
-                ${prices.pro[billingPeriod]}
+                {plansLoading ? "..." : `$${prices.pro[billingPeriod]}`}
               </span>
               <span className="text-gray-600">/month</span>
               {billingPeriod === "annual" && (
                 <p className="text-sm text-green-600 mt-1">
-                  Billed ${prices.pro.annual * 12}/year
+                  Billed ${prices.pro.annual}/year
                 </p>
               )}
             </div>
@@ -338,7 +410,7 @@ export default function PricingPage() {
           <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-xl p-8 text-white">
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2 flex items-center">
-                Premium
+                {prices.premium.name}
                 <Star className="h-5 w-5 text-yellow-400 ml-2" />
               </h3>
               <p className="text-purple-200 text-sm">For serious career advancement</p>
@@ -346,12 +418,12 @@ export default function PricingPage() {
 
             <div className="mb-6">
               <span className="text-4xl font-bold">
-                ${prices.premium[billingPeriod]}
+                {plansLoading ? "..." : `$${prices.premium[billingPeriod]}`}
               </span>
-              <span className="text-purple-200">/month</span>
+              <span className="text-purple-200">{billingPeriod === "annual" ? "/year" : "/month"}</span>
               {billingPeriod === "annual" && (
                 <p className="text-sm text-purple-200 mt-1">
-                  Billed ${prices.premium.annual * 12}/year
+                  Billed ${prices.premium.annual}/year
                 </p>
               )}
             </div>

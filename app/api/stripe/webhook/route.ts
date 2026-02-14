@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getPlanByPriceId, stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 
@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
           );
 
           const userId = session.metadata?.userId;
-          const plan = session.metadata?.plan;
+          const subscriptionPriceId = subscription.items.data[0]?.price?.id;
+          const inferredPlan = subscriptionPriceId
+            ? getPlanByPriceId(subscriptionPriceId)?.plan
+            : null;
+          const plan = session.metadata?.plan || inferredPlan;
 
           if (userId && plan) {
             await prisma.user.update({
@@ -72,18 +76,22 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.userId;
+          const userId = subscription.metadata?.userId;
+          const subscriptionPriceId = subscription.items.data[0]?.price?.id;
+          const inferredPlan = subscriptionPriceId
+            ? getPlanByPriceId(subscriptionPriceId)?.plan
+            : null;
 
-        if (userId) {
-          await prisma.user.update({
-            where: { id: userId },
-            data: {
-              subscriptionStatus: subscription.status,
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-              planType: subscription.metadata?.plan || 'pro',
-            },
-          });
-        }
+          if (userId) {
+            await prisma.user.update({
+              where: { id: userId },
+              data: {
+                subscriptionStatus: subscription.status,
+                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                planType: subscription.metadata?.plan || inferredPlan || 'pro',
+              },
+            });
+          }
         break;
       }
 
@@ -108,7 +116,7 @@ export async function POST(request: NextRequest) {
               userId,
               actionType: 'plan_downgraded',
               metadata: {
-                previousPlan: subscription.metadata?.plan,
+                previousPlan: subscription.metadata?.plan || 'paid',
                 reason: 'subscription_canceled',
               },
             },

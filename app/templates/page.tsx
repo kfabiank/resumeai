@@ -105,6 +105,10 @@ export default function TemplatesPage() {
   const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [user, setUser] = useState<{ name: string; planType: string }>({
+    name: "User",
+    planType: "free",
+  });
 
   useEffect(() => {
     const queryTemplate = searchParams.get("template");
@@ -113,11 +117,23 @@ export default function TemplatesPage() {
     }
   }, [searchParams]);
 
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    planType: "free",
-  };
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
+        const body = await res.json();
+        setUser({
+          name: body.name || body.email?.split("@")?.[0] || "User",
+          planType: body.planType || "free",
+        });
+      } catch {
+        // Keep free defaults when not authenticated
+      }
+    };
+
+    void loadProfile();
+  }, []);
 
   const filteredTemplates = (
     selectedCategory === "all"

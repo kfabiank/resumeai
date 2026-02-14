@@ -17,6 +17,12 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const emailFrom = process.env.EMAIL_FROM || process.env.FROM_EMAIL;
 const rootAdminEmail = process.env.ROOT_ADMIN_EMAIL?.toLowerCase();
 const rootAdminPassword = process.env.ROOT_ADMIN_PASSWORD;
+const qaTestPassword = process.env.QA_TEST_PASSWORD;
+const qaTestEmails = new Set([
+  'qa-free@resumeai.local',
+  'qa-pro@resumeai.local',
+  'qa-premium@resumeai.local',
+]);
 
 const providers: NextAuthOptions['providers'] = [];
 
@@ -31,7 +37,53 @@ providers.push(
       const email = credentials?.email?.toLowerCase().trim();
       const password = credentials?.password;
 
-      if (!email || !password || !rootAdminEmail || !rootAdminPassword) {
+      if (!email || !password) {
+        return null;
+      }
+
+      // Development-only QA credentials login.
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        qaTestPassword &&
+        qaTestEmails.has(email) &&
+        password === qaTestPassword
+      ) {
+        const now = new Date();
+        const qaPlanType = email.includes('qa-premium')
+          ? 'premium'
+          : email.includes('qa-pro')
+          ? 'pro'
+          : 'free';
+
+        const qaUser = await prisma.user.upsert({
+          where: { email },
+          update: {
+            name:
+              qaPlanType === 'premium'
+                ? 'QA Premium User'
+                : qaPlanType === 'pro'
+                ? 'QA Pro User'
+                : 'QA Free User',
+            planType: qaPlanType,
+            emailVerified: now,
+          },
+          create: {
+            email,
+            name:
+              qaPlanType === 'premium'
+                ? 'QA Premium User'
+                : qaPlanType === 'pro'
+                ? 'QA Pro User'
+                : 'QA Free User',
+            planType: qaPlanType,
+            emailVerified: now,
+          },
+        });
+
+        return qaUser;
+      }
+
+      if (!rootAdminEmail || !rootAdminPassword) {
         return null;
       }
 

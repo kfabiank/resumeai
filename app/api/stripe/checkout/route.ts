@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, PLANS } from '@/lib/stripe';
+import {
+  stripe,
+  getConfiguredPriceId,
+  getPlanByPriceId,
+  type BillingPeriod,
+  type PaidPlanType,
+} from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 
@@ -12,17 +18,45 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { plan, billingPeriod } = body;
+    const { plan, billingPeriod, priceId: incomingPriceId } = body as {
+      plan?: PaidPlanType;
+      billingPeriod?: BillingPeriod;
+      priceId?: string;
+    };
 
-    if (!plan || !billingPeriod) {
+    if (!incomingPriceId && (!plan || !billingPeriod)) {
       return NextResponse.json(
-        { error: 'Missing required fields: plan and billingPeriod' },
+        { error: 'Missing required fields: provide priceId OR plan + billingPeriod' },
         { status: 400 }
       );
     }
 
+    let selectedPlan: PaidPlanType | undefined = plan;
+    let selectedBillingPeriod: BillingPeriod | undefined = billingPeriod;
+    let resolvedPriceId = incomingPriceId || '';
+
+    if (incomingPriceId) {
+      const mapped = getPlanByPriceId(incomingPriceId);
+      if (!mapped) {
+        return NextResponse.json(
+          { error: 'Invalid priceId. It is not mapped to a paid plan.' },
+          { status: 400 }
+        );
+      }
+      selectedPlan = mapped.plan;
+      selectedBillingPeriod = mapped.billingPeriod;
+      resolvedPriceId = incomingPriceId;
+    } else {
+      if (!selectedPlan || !selectedBillingPeriod) {
+        return NextResponse.json(
+          { error: 'Missing plan or billingPeriod' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Validate plan
-    if (!['pro', 'premium'].includes(plan)) {
+    if (!selectedPlan || !['pro', 'premium'].includes(selectedPlan)) {
       return NextResponse.json(
         { error: 'Invalid plan. Must be "pro" or "premium"' },
         { status: 400 }
@@ -58,18 +92,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Get the price ID based on plan and billing period
-    const planConfig = PLANS[plan as keyof typeof PLANS];
-    if (!('priceId' in planConfig)) {
-      return NextResponse.json(
-        { error: 'Invalid plan configuration' },
-        { status: 400 }
-      );
+    if (!incomingPriceId) {
+      resolvedPriceId = getConfiguredPriceId(
+        selectedPlan,
+        selectedBillingPeriod as BillingPeriod
+      ) || '';
     }
 
-    const priceId = planConfig.priceId[billingPeriod as 'monthly' | 'annual'];
-
-    if (!priceId || priceId === 'price_xxx') {
+    if (!resolvedPriceId || resolvedPriceId === 'price_xxx') {
       // For demo/development, return a message about setting up Stripe
       return NextResponse.json(
         {
@@ -88,7 +118,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,
+          price: resolvedPriceId,
           quantity: 1,
         },
       ],
@@ -96,13 +126,16 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
       metadata: {
         userId: user.id,
-        plan,
-        billingPeriod,
+        plan: selectedPlan,
+        billingPeriod: selectedBillingPeriod,
+        priceId: resolvedPriceId,
       },
       subscription_data: {
         metadata: {
           userId: user.id,
-          plan,
+          plan: selectedPlan,
+          billingPeriod: selectedBillingPeriod,
+          priceId: resolvedPriceId,
         },
       },
     });

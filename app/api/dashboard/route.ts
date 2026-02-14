@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { PLAN_LIMITS } from '@/lib/stripe';
 
 export async function GET() {
   try {
@@ -53,17 +54,11 @@ export async function GET() {
       prisma.resume.aggregate({ where: { userId }, _avg: { atsScore: true } }),
     ]);
 
-    const limits = {
-      free: 3,
-      pro: -1,
-      premium: -1,
-    } as const;
-
     return NextResponse.json({
       user: {
         ...user,
         resumesThisMonth,
-        resumesLimit: limits[user.planType as keyof typeof limits] ?? 3,
+        resumesLimit: PLAN_LIMITS[user.planType as keyof typeof PLAN_LIMITS]?.resumesPerMonth ?? 3,
       },
       stats: {
         totalResumes: resumes.length,

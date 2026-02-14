@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Zap, Target, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, BarChart3 } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FileText, Zap, Target, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, BarChart3, X } from "lucide-react";
+import { isTemplateId, TEMPLATE_CATALOG } from "@/lib/template-catalog";
 
 const SAMPLE_RESUME = `John Doe
 Software Engineer
@@ -60,6 +62,154 @@ BS Computer Science, Stanford University, 2019
 SKILLS
 Technical: React, TypeScript, Node.js, Python, AWS, Docker, Kubernetes, CI/CD
 Soft: Leadership, Communication, Agile, Cross-functional Collaboration`;
+
+function TemplatePreview({
+  templateId,
+  colors,
+  compact = true,
+}: {
+  templateId: string;
+  colors: string;
+  compact?: boolean;
+}) {
+  const textSize = compact ? "text-[8px]" : "text-[10px]";
+  const sectionGap = compact ? "space-y-2" : "space-y-3";
+  const pad = compact ? "p-3" : "p-5";
+  switch (templateId) {
+    case "creative-bold":
+      return (
+        <div className={`h-full w-full bg-white flex ${textSize}`}>
+          <div className={`w-1/3 bg-gradient-to-b ${colors} text-white ${pad} ${sectionGap}`}>
+            <p className="font-bold">John Doe</p>
+            <p>Product Designer</p>
+            <p>SF, CA</p>
+            <p>john@email.com</p>
+          </div>
+          <div className={`w-2/3 ${pad} ${sectionGap} text-slate-700`}>
+            <p className="font-semibold text-slate-900">Selected Projects</p>
+            <p>Fintech Redesign (+24% conv.)</p>
+            <p>Design System v3</p>
+            <p className="font-semibold text-slate-900">Toolkit</p>
+            <p>Figma, Framer, After Effects</p>
+          </div>
+        </div>
+      );
+    case "academic-formal":
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
+          <p className="font-bold text-slate-900 text-[11px]">Dr. John Doe</p>
+          <p className="italic">Computational Biology Researcher</p>
+          <div className={`h-[1px] w-full bg-gradient-to-r ${colors}`} />
+          <p><span className="font-semibold text-slate-900">Education:</span> PhD, MIT</p>
+          <p><span className="font-semibold text-slate-900">Publications:</span> Nature, Science</p>
+          <p><span className="font-semibold text-slate-900">Grants:</span> NIH R01, NSF</p>
+        </div>
+      );
+    case "consultant-pro":
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700`}>
+          <div className="grid grid-cols-2 gap-3 h-full">
+            <div className={sectionGap}>
+              <p className="font-bold text-slate-900 text-[11px]">John Doe</p>
+              <p>Management Consultant</p>
+              <p className="font-semibold text-slate-900">Domains</p>
+              <p>Ops, GTM, PMO</p>
+            </div>
+            <div className={sectionGap}>
+              <div className={`rounded bg-gradient-to-r ${colors} text-white p-2`}>
+                <p>Impact</p>
+                <p>+18% margin</p>
+                <p>$2.3M savings</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    case "executive-classic":
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
+          <div className={`h-1.5 w-24 rounded bg-gradient-to-r ${colors}`} />
+          <p className="font-bold text-slate-900 text-[11px]">John Doe, MBA</p>
+          <p>VP Product & Strategy</p>
+          <p className="font-semibold text-slate-900">Board-Level Summary</p>
+          <p>Scaled ARR from $12M to $48M in 3 years.</p>
+          <p className="font-semibold text-slate-900">Leadership</p>
+          <p>Led 60-person cross-functional org.</p>
+        </div>
+      );
+    case "startup-modern":
+      return (
+        <div className={`h-full w-full bg-slate-50 ${pad} ${textSize} text-slate-700`}>
+          <div className={`rounded-xl p-2 bg-gradient-to-r ${colors} text-white mb-2`}>
+            <p className="font-bold">John Doe</p>
+            <p>Founding Engineer</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            <div className="rounded bg-white p-2">
+              <p className="font-semibold">Growth</p>
+              <p>0 to 120k MAU</p>
+            </div>
+            <div className="rounded bg-white p-2">
+              <p className="font-semibold">Speed</p>
+              <p>-41% deploy time</p>
+            </div>
+            <div className="rounded bg-white p-2">
+              <p className="font-semibold">Reliability</p>
+              <p>99.95% uptime</p>
+            </div>
+          </div>
+          <p>React, Node, Postgres, Terraform</p>
+        </div>
+      );
+    case "simple-clean":
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
+          <p className="font-bold text-slate-900 text-[11px]">John Doe</p>
+          <div className="h-[1px] bg-slate-300" />
+          <p>Senior Software Engineer</p>
+          <p className="font-semibold text-slate-900">Experience</p>
+          <p>Acme Tech, Beta Labs, Nova</p>
+          <p className="font-semibold text-slate-900">Skills</p>
+          <p>TypeScript, React, Node, SQL</p>
+        </div>
+      );
+    case "tech-minimal":
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700`}>
+          <div className={`h-7 rounded bg-gradient-to-r ${colors} mb-3`} />
+          <div className="grid grid-cols-[1fr_2fr] gap-3 h-[80%]">
+            <div className={sectionGap}>
+              <p className="font-semibold text-slate-900">Stack</p>
+              <p>Next.js</p>
+              <p>Prisma</p>
+              <p>Postgres</p>
+            </div>
+            <div className={sectionGap}>
+              <p className="font-semibold text-slate-900">Experience Timeline</p>
+              <p>2024 - Staff Engineer</p>
+              <p>2022 - Senior Engineer</p>
+              <p>2020 - Software Engineer</p>
+            </div>
+          </div>
+        </div>
+      );
+    default:
+      return (
+        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
+          <div className={`rounded ${compact ? "p-2" : "p-3"} bg-gradient-to-r ${colors} text-white`}>
+            <p className="font-bold text-[11px]">John Doe</p>
+            <p>Senior Software Engineer</p>
+          </div>
+          <p className="font-semibold text-slate-900">Summary</p>
+          <p>8+ years building scalable products with React and Node.js.</p>
+          <p className="font-semibold text-slate-900">Experience</p>
+          <p>Led migration to microservices and improved velocity by 35%.</p>
+          <p className="font-semibold text-slate-900">Skills</p>
+          <p>TypeScript, React, PostgreSQL, AWS</p>
+        </div>
+      );
+  }
+}
 
 function ATSDemo() {
   const [step, setStep] = useState<"input" | "analyzing" | "result">("input");
@@ -279,6 +429,36 @@ function ATSDemo() {
 }
 
 export default function LandingPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const previewTemplate = TEMPLATE_CATALOG.find((t) => t.id === previewTemplateId) || null;
+  const queryPreview = searchParams.get("preview");
+
+  const setPreviewWithUrl = (templateId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (templateId) {
+      params.set("preview", templateId);
+    } else {
+      params.delete("preview");
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `${pathname}?${query}#templates` : `${pathname}#templates`;
+    router.replace(nextUrl, { scroll: false });
+    setPreviewTemplateId(templateId);
+  };
+
+  useEffect(() => {
+    if (queryPreview && isTemplateId(queryPreview)) {
+      setPreviewTemplateId(queryPreview);
+      return;
+    }
+    setPreviewTemplateId(null);
+  }, [queryPreview]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-white">
       {/* Navigation */}
@@ -297,11 +477,11 @@ export default function LandingPage() {
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
               <a href="#templates" className="text-gray-600 hover:text-gray-900 transition">Templates</a>
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 font-medium transition">
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition">
                 Sign In
               </Link>
               <Link 
-                href="/dashboard" 
+                href="/login" 
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-600/30"
               >
                 Get Started Free
@@ -689,47 +869,17 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
-            {[
-              { name: "Modern Professional", category: "Professional", free: true, popular: true, colors: "from-blue-500 to-blue-700" },
-              { name: "Tech Minimal", category: "Tech", free: true, popular: false, colors: "from-slate-600 to-slate-800" },
-              { name: "Executive Classic", category: "Executive", free: false, popular: false, colors: "from-gray-700 to-gray-900" },
-              { name: "Creative Bold", category: "Creative", free: false, popular: false, colors: "from-purple-500 to-purple-700" },
-              { name: "Simple Clean", category: "Modern", free: true, popular: false, colors: "from-teal-500 to-teal-700" },
-              { name: "Startup Modern", category: "Tech", free: false, popular: false, colors: "from-orange-500 to-orange-700" },
-              { name: "Consultant Pro", category: "Professional", free: false, popular: false, colors: "from-indigo-500 to-indigo-700" },
-              { name: "Academic Formal", category: "Academic", free: true, popular: false, colors: "from-green-600 to-green-800" },
-            ].map((template, i) => (
-              <div key={i} className="group cursor-pointer">
+            {TEMPLATE_CATALOG.map((template) => (
+              <div key={template.id} className="group">
                 <div className="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 aspect-[8.5/11] mb-3">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${template.colors} opacity-10`} />
-                  <div className="absolute inset-0 p-4 flex flex-col">
-                    <div className={`h-8 rounded bg-gradient-to-r ${template.colors} mb-3`} />
-                    <div className="h-2 bg-gray-200 rounded w-2/3 mb-1" />
-                    <div className="h-2 bg-gray-200 rounded w-1/2 mb-3" />
-                    <div className="space-y-2 flex-1">
-                      <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                      <div className="h-1.5 bg-gray-200 rounded w-full" />
-                      <div className="h-1.5 bg-gray-200 rounded w-5/6" />
-                      <div className="h-1.5 bg-gray-200 rounded w-4/5 mb-2" />
-                      <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                      <div className="h-1.5 bg-gray-200 rounded w-full" />
-                      <div className="h-1.5 bg-gray-200 rounded w-5/6" />
-                      <div className="h-1.5 bg-gray-200 rounded w-3/4 mb-2" />
-                      <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                      <div className="flex gap-1 flex-wrap mt-1">
-                        {[40, 55, 35, 45, 60].map((w, j) => (
-                          <div key={j} className={`h-3 rounded-full bg-gradient-to-r ${template.colors} opacity-30`} style={{ width: `${w}%` }} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  <TemplatePreview templateId={template.id} colors={template.colors} />
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {template.popular && (
+                    {template.isPopular && (
                       <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-medium flex items-center">
                         <Star className="h-3 w-3 mr-1 fill-current" /> Popular
                       </span>
                     )}
-                    {template.free ? (
+                    {!template.isPremium ? (
                       <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">Free</span>
                     ) : (
                       <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">Pro</span>
@@ -737,18 +887,85 @@ export default function LandingPage() {
                   </div>
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Link
-                      href={`/builder/new?template=${template.name.toLowerCase().replace(/ /g, "-")}`}
+                      href={`/builder/new?template=${template.id}`}
                       className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-100 transition"
                     >
                       Use Template
                     </Link>
                   </div>
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">{template.name}</p>
-                <p className="text-xs text-gray-500">{template.category}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{template.name}</p>
+                    <p className="text-xs text-gray-500">{template.categoryLabel}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewWithUrl(template.id)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Preview
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+
+          {previewTemplate && (
+            <div
+              className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setPreviewWithUrl(null)}
+            >
+              <div
+                className="relative w-full max-w-4xl rounded-2xl bg-white shadow-2xl border border-slate-200 p-4 md:p-6"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPreviewWithUrl(null)}
+                  className="absolute right-4 top-4 text-slate-500 hover:text-slate-700"
+                  aria-label="Close preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="mb-4 md:mb-6">
+                  <h3 className="text-2xl font-bold text-slate-900">{previewTemplate.name}</h3>
+                  <p className="text-slate-600">{previewTemplate.description}</p>
+                </div>
+
+                  <div className="grid md:grid-cols-[1.25fr_0.75fr] gap-6 items-start">
+                    <div className="rounded-xl border border-slate-200 overflow-hidden aspect-[8.5/11] bg-white">
+                      <TemplatePreview templateId={previewTemplate.id} colors={previewTemplate.colors} compact={false} />
+                    </div>
+
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-600">
+                      Category: <span className="font-semibold text-slate-900">{previewTemplate.categoryLabel}</span>
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Access:{" "}
+                      <span className={`font-semibold ${previewTemplate.isPremium ? "text-purple-700" : "text-green-700"}`}>
+                        {previewTemplate.isPremium ? "Pro" : "Free"}
+                      </span>
+                    </p>
+                    <Link
+                      href={`/builder/new?template=${previewTemplate.id}`}
+                      className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-white font-semibold hover:bg-blue-700 transition"
+                    >
+                      Use This Template
+                    </Link>
+                    <Link
+                      href="/templates"
+                      className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-3 text-slate-700 font-medium hover:bg-slate-50 transition"
+                    >
+                      Browse All Templates
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="text-center">
             <Link
@@ -785,7 +1002,7 @@ export default function LandingPage() {
                   <span className="text-gray-600">/forever</span>
                 </div>
                 <Link 
-                  href="/dashboard" 
+                  href="/login" 
                   className="block w-full bg-gray-100 text-gray-900 px-6 py-3 rounded-lg hover:bg-gray-200 transition font-semibold text-center"
                 >
                   Get Started
@@ -826,7 +1043,7 @@ export default function LandingPage() {
                   <span className="text-blue-100">/month</span>
                 </div>
                 <Link 
-                  href="/dashboard" 
+                  href="/login" 
                   className="block w-full bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition font-semibold text-center shadow-lg"
                 >
                   Start Free Trial
@@ -870,7 +1087,7 @@ export default function LandingPage() {
                   <span className="text-gray-600">/month</span>
                 </div>
                 <Link 
-                  href="/dashboard" 
+                  href="/login" 
                   className="block w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold text-center shadow-lg"
                 >
                   Start Free Trial

@@ -13,10 +13,10 @@ npm install
 
 ### 2. Setup Database
 ```bash
-# Create PostgreSQL database
-createdb resumeai
-
-# Or use Supabase (free): https://supabase.com
+# Use Neon (recommended): https://console.neon.tech
+# Create a project and copy:
+# 1) Pooled connection string -> DATABASE_URL
+# 2) Direct connection string -> DIRECT_URL
 ```
 
 ### 3. Configure Environment
@@ -108,6 +108,16 @@ git push -u origin main
 2. Get connection string
 3. Add to Vercel environment variables
 4. Run migrations: `DATABASE_URL="..." npx prisma db push`
+
+### Neon + Vercel (Recommended)
+1. Create your DB in Neon: https://console.neon.tech
+2. In Neon, copy:
+   - `Pooled connection` -> `DATABASE_URL`
+   - `Direct connection` -> `DIRECT_URL`
+3. In Vercel Project Settings > Environment Variables, add both URLs.
+4. Deploy and run schema sync once:
+   - Local: `npx prisma db push`
+   - Or with env inline: `DATABASE_URL="..." DIRECT_URL="..." npx prisma db push`
 
 ## 📁 Project Structure
 

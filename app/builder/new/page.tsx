@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, FileText, Briefcase, GraduationCap, Code, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import { DEFAULT_TEMPLATE_ID, getTemplateById, isTemplateId } from "@/lib/template-catalog";
 
 interface Experience {
   id: string;
@@ -25,6 +27,13 @@ interface Education {
 }
 
 export default function ResumeBuilderPage() {
+  const searchParams = useSearchParams();
+  const requestedTemplate = searchParams.get("template") || DEFAULT_TEMPLATE_ID;
+  const selectedTemplateId = isTemplateId(requestedTemplate)
+    ? requestedTemplate
+    : DEFAULT_TEMPLATE_ID;
+  const selectedTemplate = getTemplateById(selectedTemplateId);
+
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -143,6 +152,7 @@ export default function ResumeBuilderPage() {
       experiences,
       education,
       skills,
+      templateId: selectedTemplateId,
     };
 
     try {
@@ -188,8 +198,8 @@ export default function ResumeBuilderPage() {
                 ResumeAI
               </span>
             </Link>
-            <div className="text-sm text-gray-600">
-              Step {step} of 4
+          <div className="text-sm text-gray-600">
+              Step {step} of 4 · Template: {selectedTemplate?.name || "Modern Professional"}
             </div>
           </div>
         </div>

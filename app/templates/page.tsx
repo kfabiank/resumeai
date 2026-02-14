@@ -1,86 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { FileText, Check, Lock, Eye, Star } from "lucide-react";
-
-interface Template {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  thumbnail: string;
-  isPremium: boolean;
-  isPopular?: boolean;
-}
-
-const templates: Template[] = [
-  {
-    id: "modern-professional",
-    name: "Modern Professional",
-    description: "Clean and contemporary design perfect for corporate roles",
-    category: "professional",
-    thumbnail: "/templates/modern-professional.png",
-    isPremium: false,
-    isPopular: true,
-  },
-  {
-    id: "tech-minimal",
-    name: "Tech Minimal",
-    description: "Sleek design optimized for tech and startup positions",
-    category: "tech",
-    thumbnail: "/templates/tech-minimal.png",
-    isPremium: false,
-  },
-  {
-    id: "executive-classic",
-    name: "Executive Classic",
-    description: "Elegant template for senior leadership positions",
-    category: "executive",
-    thumbnail: "/templates/executive-classic.png",
-    isPremium: true,
-  },
-  {
-    id: "creative-bold",
-    name: "Creative Bold",
-    description: "Stand out with this eye-catching creative design",
-    category: "creative",
-    thumbnail: "/templates/creative-bold.png",
-    isPremium: true,
-  },
-  {
-    id: "academic-formal",
-    name: "Academic Formal",
-    description: "Traditional format for academic and research positions",
-    category: "academic",
-    thumbnail: "/templates/academic-formal.png",
-    isPremium: false,
-  },
-  {
-    id: "startup-modern",
-    name: "Startup Modern",
-    description: "Dynamic template perfect for fast-paced environments",
-    category: "tech",
-    thumbnail: "/templates/startup-modern.png",
-    isPremium: true,
-  },
-  {
-    id: "consultant-pro",
-    name: "Consultant Pro",
-    description: "Professional template for consulting and advisory roles",
-    category: "professional",
-    thumbnail: "/templates/consultant-pro.png",
-    isPremium: true,
-  },
-  {
-    id: "simple-clean",
-    name: "Simple Clean",
-    description: "Minimalist design that lets your experience shine",
-    category: "modern",
-    thumbnail: "/templates/simple-clean.png",
-    isPremium: false,
-  },
-];
+import {
+  isTemplateId,
+  TEMPLATE_CATALOG,
+  type TemplateCatalogItem,
+} from "@/lib/template-catalog";
 
 const categories = [
   { id: "all", name: "All Templates" },
@@ -93,8 +21,16 @@ const categories = [
 ];
 
 export default function TemplatesPage() {
+  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const queryTemplate = searchParams.get("template");
+    if (queryTemplate && isTemplateId(queryTemplate)) {
+      setSelectedTemplate(queryTemplate);
+    }
+  }, [searchParams]);
 
   // Mock user data
   const user = {
@@ -103,12 +39,15 @@ export default function TemplatesPage() {
   };
 
   const filteredTemplates = selectedCategory === "all"
-    ? templates
-    : templates.filter(t => t.category === selectedCategory);
+    ? TEMPLATE_CATALOG
+    : TEMPLATE_CATALOG.filter((t) => t.category === selectedCategory);
 
-  const canUseTemplate = (template: Template) => {
+  const canUseTemplate = (template: TemplateCatalogItem) => {
     return !template.isPremium || user.planType !== "free";
   };
+  const selectedTemplateData = selectedTemplate
+    ? TEMPLATE_CATALOG.find((t) => t.id === selectedTemplate) || null
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -185,10 +124,27 @@ export default function TemplatesPage() {
             >
               {/* Template Preview */}
               <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                {/* Placeholder for template thumbnail */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-gray-50 to-gray-100">
-                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
-                  <span className="text-sm text-gray-500">{template.name}</span>
+                <div className={`absolute inset-0 bg-gradient-to-br ${template.colors} opacity-10`} />
+                <div className="absolute inset-0 p-4 flex flex-col">
+                  <div className={`h-8 rounded bg-gradient-to-r ${template.colors} mb-3`} />
+                  <div className="h-2 bg-gray-200 rounded w-2/3 mb-1" />
+                  <div className="h-2 bg-gray-200 rounded w-1/2 mb-3" />
+                  <div className="space-y-2 flex-1">
+                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
+                    <div className="h-1.5 bg-gray-200 rounded w-full" />
+                    <div className="h-1.5 bg-gray-200 rounded w-5/6" />
+                    <div className="h-1.5 bg-gray-200 rounded w-4/5 mb-2" />
+                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
+                    <div className="h-1.5 bg-gray-200 rounded w-full" />
+                    <div className="h-1.5 bg-gray-200 rounded w-5/6" />
+                    <div className="h-1.5 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
+                    <div className="flex gap-1 flex-wrap mt-1">
+                      {[40, 55, 35, 45, 60].map((w, j) => (
+                        <div key={j} className={`h-3 rounded-full bg-gradient-to-r ${template.colors} opacity-30`} style={{ width: `${w}%` }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Badges */}
@@ -209,7 +165,10 @@ export default function TemplatesPage() {
 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition">
+                  <button
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                  >
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </button>
@@ -254,12 +213,12 @@ export default function TemplatesPage() {
         </div>
 
         {/* Selected Template Action */}
-        {selectedTemplate && (
+        {selectedTemplateData && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">
-                  Selected: {templates.find(t => t.id === selectedTemplate)?.name}
+                  Selected: {selectedTemplateData.name}
                 </p>
                 <p className="text-sm text-gray-600">
                   Ready to create your resume with this template
@@ -272,12 +231,21 @@ export default function TemplatesPage() {
                 >
                   Cancel
                 </button>
-                <Link
-                  href={`/builder/new?template=${selectedTemplate}`}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                >
-                  Use This Template
-                </Link>
+                {canUseTemplate(selectedTemplateData) ? (
+                  <Link
+                    href={`/builder/new?template=${selectedTemplateData.id}`}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Use This Template
+                  </Link>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                  >
+                    Upgrade to Use
+                  </Link>
+                )}
               </div>
             </div>
           </div>

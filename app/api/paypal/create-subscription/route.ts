@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { paypalClient, PAYPAL_PLANS, PLAN_PRICES } from '@/lib/paypal';
 import { prisma } from '@/lib/prisma';
 import { SubscriptionsController } from '@paypal/paypal-server-sdk';
+import { getAuthSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+    const currentUserId = session?.user?.id;
+    if (!currentUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { plan, billingPeriod, userId } = body;
+    const { plan, billingPeriod } = body;
 
     if (!plan || !billingPeriod) {
       return NextResponse.json(
@@ -22,23 +29,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For demo purposes, use a mock user ID if not provided
-    const currentUserId = userId || 'demo-user-123';
-
-    // Get or create user
-    let user = await prisma.user.findUnique({
+    // Get current user
+    const user = await prisma.user.findUnique({
       where: { id: currentUserId },
     });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          id: currentUserId,
-          email: 'demo@example.com',
-          name: 'Demo User',
-          planType: 'free',
-        },
-      });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get the PayPal plan ID
@@ -76,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     // Find the approval link
     const approvalLink = subscription.links?.find(
-      (link) => link.rel === 'approve'
+      (link: { rel?: string; href?: string }) => link.rel === 'approve'
     );
 
     if (!approvalLink?.href) {

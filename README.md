@@ -130,7 +130,19 @@ Crea/actualiza:
 - `qa-premium@resumeai.local` (plan `premium`)
 
 Login QA por password (solo `NODE_ENV != production`):
-- password = `QA_TEST_PASSWORD`
+- password = valor de `QA_TEST_PASSWORD` en `.env`
+
+Admin/root credentials:
+- email = `ROOT_ADMIN_EMAIL`
+- password = `ROOT_ADMIN_PASSWORD`
+
+Switcher rápido de usuarios QA (solo admin):
+- URL: `http://localhost:3000/admin`
+- Requiere iniciar sesión como root admin
+- En `/admin` ingresas `QA_TEST_PASSWORD` y cambias a:
+  - `qa-free@resumeai.local`
+  - `qa-pro@resumeai.local`
+  - `qa-premium@resumeai.local`
 
 ## Testing
 ```bash

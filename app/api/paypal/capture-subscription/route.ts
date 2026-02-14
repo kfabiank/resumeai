@@ -19,11 +19,13 @@ export async function GET(request: NextRequest) {
     const subscriptionsController = new SubscriptionsController(paypalClient);
 
     // Get subscription details
-    const { body: subscription } = await subscriptionsController.subscriptionsGet({
-      subscriptionId,
+    const { result: subscription } = await subscriptionsController.getSubscription({
+      id: subscriptionId,
     });
 
-    if (subscription.status === 'ACTIVE') {
+    const subscriptionStatus = (subscription as any)?.status as string | undefined;
+
+    if (subscriptionStatus === 'ACTIVE') {
       // Update user in database
       await prisma.user.update({
         where: { id: userId },

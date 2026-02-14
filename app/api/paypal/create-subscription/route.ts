@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paypalClient, PAYPAL_PLANS, PLAN_PRICES } from '@/lib/paypal';
 import { prisma } from '@/lib/prisma';
-import { SubscriptionsController } from '@paypal/paypal-server-sdk';
+import {
+  ApplicationContextUserAction,
+  ExperienceContextShippingPreference,
+  SubscriptionsController,
+} from '@paypal/paypal-server-sdk';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,14 +63,14 @@ export async function POST(request: NextRequest) {
     const subscriptionsController = new SubscriptionsController(paypalClient);
 
     // Create subscription
-    const { body: subscription } = await subscriptionsController.subscriptionsCreate({
+    const { result: subscription } = await subscriptionsController.createSubscription({
       body: {
         planId: planId,
         applicationContext: {
           brandName: 'ResumeAI',
           locale: 'en-US',
-          shippingPreference: 'NO_SHIPPING',
-          userAction: 'SUBSCRIBE_NOW',
+          shippingPreference: ExperienceContextShippingPreference.NoShipping,
+          userAction: ApplicationContextUserAction.SubscribeNow,
           returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/paypal/capture-subscription?userId=${currentUserId}&plan=${plan}`,
           cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
         },
@@ -75,9 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Find the approval link
-    const approvalLink = subscription.links?.find(
-      (link) => link.rel === 'approve'
-    );
+    const approvalLink = subscription.links?.find((link: { rel?: string }) => link.rel === 'approve');
 
     if (!approvalLink?.href) {
       throw new Error('No approval link found in PayPal response');

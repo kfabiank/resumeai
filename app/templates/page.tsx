@@ -9,6 +9,8 @@ import {
   TEMPLATE_CATALOG,
   type TemplateCatalogItem,
 } from "@/lib/template-catalog";
+import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
+import type { ResumeData } from "@/types/resume";
 
 const categories = [
   { id: "all", name: "All Templates" },
@@ -19,6 +21,76 @@ const categories = [
   { id: "academic", name: "Academic" },
   { id: "modern", name: "Modern" },
 ];
+
+const NEW_TEMPLATE_IDS = new Set([
+  "accountant-template",
+  "consultant-template",
+  "data-science-template",
+  "devops-template",
+  "finance-template",
+  "frontend-template",
+  "legal-template",
+  "marketing-template",
+  "medical-template",
+  "nurse-template",
+  "paralegal-template",
+  "product-manager-template",
+  "sales-template",
+  "startup-template",
+  "ux-designer-template",
+]);
+
+const PREVIEW_DATA: ResumeData = {
+  personalInfo: {
+    name: "Fabian Moya",
+    email: "kfabiank@gmail.com",
+    phone: "+1 555 234 8891",
+    location: "Miami, FL",
+    headline: "Senior Full-Stack Engineer",
+    linkedin: "linkedin.com/in/fabian",
+    portfolio: "fabian.dev",
+  },
+  professionalSummary:
+    "Senior Full-Stack Engineer with 8+ years building SaaS platforms. Strong in Next.js, TypeScript, PostgreSQL, and cloud architecture.",
+  experiences: [
+    {
+      title: "Senior Full-Stack Engineer",
+      company: "ResumeAI",
+      startDate: "2023-01",
+      endDate: "",
+      current: true,
+      optimizedBullets: [
+        "Reduced p95 API latency by 40% via query optimization.",
+        "Improved paid conversion by 22% with billing flow redesign.",
+      ],
+      keywordsUsed: ["next.js", "prisma", "postgresql"],
+    },
+    {
+      title: "Full-Stack Engineer",
+      company: "TalentFlow",
+      startDate: "2020-05",
+      endDate: "2022-12",
+      current: false,
+      optimizedBullets: [
+        "Built recruiter dashboard used by 10k+ MAU.",
+      ],
+      keywordsUsed: ["react", "typescript"],
+    },
+  ],
+  education: [
+    {
+      degree: "B.S. Computer Science",
+      institution: "Florida International University",
+      graduationDate: "2018-05",
+      gpa: "3.7",
+    },
+  ],
+  skills: {
+    technical: ["TypeScript", "Next.js", "Node.js", "PostgreSQL", "AWS"],
+    soft: ["Leadership", "Communication", "Mentoring"],
+  },
+  keywords: ["SaaS", "ATS", "Optimization"],
+};
 
 export default function TemplatesPage() {
   const searchParams = useSearchParams();
@@ -38,9 +110,16 @@ export default function TemplatesPage() {
     planType: "free",
   };
 
-  const filteredTemplates = selectedCategory === "all"
-    ? TEMPLATE_CATALOG
-    : TEMPLATE_CATALOG.filter((t) => t.category === selectedCategory);
+  const filteredTemplates = (
+    selectedCategory === "all"
+      ? TEMPLATE_CATALOG
+      : TEMPLATE_CATALOG.filter((t) => t.category === selectedCategory)
+  ).slice().sort((a, b) => {
+    const aIsNew = NEW_TEMPLATE_IDS.has(a.id) ? 1 : 0;
+    const bIsNew = NEW_TEMPLATE_IDS.has(b.id) ? 1 : 0;
+    if (aIsNew !== bIsNew) return bIsNew - aIsNew;
+    return a.name.localeCompare(b.name);
+  });
 
   const canUseTemplate = (template: TemplateCatalogItem) => {
     return !template.isPremium || user.planType !== "free";
@@ -124,31 +203,19 @@ export default function TemplatesPage() {
             >
               {/* Template Preview */}
               <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                <div className={`absolute inset-0 bg-gradient-to-br ${template.colors} opacity-10`} />
-                <div className="absolute inset-0 p-4 flex flex-col">
-                  <div className={`h-8 rounded bg-gradient-to-r ${template.colors} mb-3`} />
-                  <div className="h-2 bg-gray-200 rounded w-2/3 mb-1" />
-                  <div className="h-2 bg-gray-200 rounded w-1/2 mb-3" />
-                  <div className="space-y-2 flex-1">
-                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                    <div className="h-1.5 bg-gray-200 rounded w-full" />
-                    <div className="h-1.5 bg-gray-200 rounded w-5/6" />
-                    <div className="h-1.5 bg-gray-200 rounded w-4/5 mb-2" />
-                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                    <div className="h-1.5 bg-gray-200 rounded w-full" />
-                    <div className="h-1.5 bg-gray-200 rounded w-5/6" />
-                    <div className="h-1.5 bg-gray-200 rounded w-3/4 mb-2" />
-                    <div className={`h-1.5 rounded bg-gradient-to-r ${template.colors} w-1/3`} />
-                    <div className="flex gap-1 flex-wrap mt-1">
-                      {[40, 55, 35, 45, 60].map((w, j) => (
-                        <div key={j} className={`h-3 rounded-full bg-gradient-to-r ${template.colors} opacity-30`} style={{ width: `${w}%` }} />
-                      ))}
-                    </div>
+                <div className="absolute inset-0 overflow-hidden bg-white">
+                  <div className="origin-top-left scale-[0.28] w-[794px]">
+                    <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
                   </div>
                 </div>
 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
+                  {NEW_TEMPLATE_IDS.has(template.id) && (
+                    <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      New
+                    </span>
+                  )}
                   {template.isPopular && (
                     <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
                       <Star className="h-3 w-3 mr-1" />

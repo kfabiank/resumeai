@@ -38,6 +38,16 @@ npm run dev
 
 Open http://localhost:3000
 
+### 6. Run Unit Tests
+```bash
+npm run test
+```
+
+### 7. Run Coverage
+```bash
+npm run test:coverage
+```
+
 ## 📦 What's Included
 
 ✅ **Complete Landing Page** - Professional design with pricing

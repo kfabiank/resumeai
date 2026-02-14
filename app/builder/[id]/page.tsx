@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Eye, Save, Sparkles, Share2 } from "lucide-react";
+import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
+import type { ResumeData } from "@/types/resume";
 
 interface ResumeContent {
   personalInfo: {
@@ -38,6 +40,24 @@ interface ResumeContent {
     soft: string[];
   };
   keywords: string[];
+}
+
+function mapToLovableResumeData(content: ResumeContent): ResumeData {
+  return {
+    personalInfo: {
+      ...content.personalInfo,
+      linkedin: content.personalInfo.linkedin,
+      portfolio: content.personalInfo.portfolio,
+    },
+    professionalSummary: content.professionalSummary,
+    experiences: content.experiences.map((exp) => ({
+      ...exp,
+      keywordsUsed: exp.keywordsUsed || [],
+    })),
+    education: content.education,
+    skills: content.skills,
+    keywords: content.keywords,
+  };
 }
 
 export default function ResumeEditorPage() {
@@ -273,125 +293,10 @@ export default function ResumeEditorPage() {
                 <Eye className="h-5 w-5 text-gray-400" />
               </div>
 
-              {/* Resume Preview - Modern Professional Template */}
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center pb-6 border-b-2 border-blue-600">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {content.personalInfo.name}
-                  </h1>
-                  {content.personalInfo.headline && (
-                    <p className="text-lg text-blue-600 font-medium mb-3">
-                      {content.personalInfo.headline}
-                    </p>
-                  )}
-                  <div className="flex justify-center flex-wrap gap-4 text-sm text-gray-600">
-                    <span>{content.personalInfo.email}</span>
-                    <span>•</span>
-                    <span>{content.personalInfo.phone}</span>
-                    {content.personalInfo.location && (
-                      <>
-                        <span>•</span>
-                        <span>{content.personalInfo.location}</span>
-                      </>
-                    )}
-                  </div>
-                  {(content.personalInfo.linkedin || content.personalInfo.portfolio) && (
-                    <div className="flex justify-center flex-wrap gap-4 text-sm text-blue-600 mt-2">
-                      {content.personalInfo.linkedin && (
-                        <span>{content.personalInfo.linkedin}</span>
-                      )}
-                      {content.personalInfo.portfolio && (
-                        <span>{content.personalInfo.portfolio}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Professional Summary */}
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-2 uppercase tracking-wide">
-                    Professional Summary
-                  </h2>
-                  <p className="text-gray-700 leading-relaxed">
-                    {content.professionalSummary}
-                  </p>
-                </div>
-
-                {/* Experience */}
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-3 uppercase tracking-wide">
-                    Experience
-                  </h2>
-                  <div className="space-y-4">
-                    {content.experiences.map((exp, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-bold text-gray-900">{exp.title}</h3>
-                            <p className="text-gray-700">{exp.company}</p>
-                          </div>
-                          <div className="text-right text-sm text-gray-600">
-                            <p>
-                              {exp.startDate} - {exp.current ? "Present" : exp.endDate}
-                            </p>
-                            {exp.location && <p>{exp.location}</p>}
-                          </div>
-                        </div>
-                        <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
-                          {exp.optimizedBullets.map((bullet, bIndex) => (
-                            <li key={bIndex}>{bullet}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Education */}
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-3 uppercase tracking-wide">
-                    Education
-                  </h2>
-                  <div className="space-y-3">
-                    {content.education.map((edu, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-bold text-gray-900">{edu.degree}</h3>
-                            <p className="text-gray-700">{edu.institution}</p>
-                          </div>
-                          <div className="text-right text-sm text-gray-600">
-                            <p>{edu.graduationDate}</p>
-                            {edu.gpa && <p>GPA: {edu.gpa}</p>}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Skills */}
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-3 uppercase tracking-wide">
-                    Skills
-                  </h2>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="font-semibold text-gray-900">Technical: </span>
-                      <span className="text-gray-700">
-                        {content.skills.technical.join(" • ")}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-gray-900">Soft Skills: </span>
-                      <span className="text-gray-700">
-                        {content.skills.soft.join(" • ")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <TemplateRenderer
+                templateId={resume?.templateId}
+                data={mapToLovableResumeData(content)}
+              />
             </div>
           </div>
         </div>

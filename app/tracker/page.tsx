@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -11,7 +11,6 @@ import {
   Building2,
   MapPin,
   ExternalLink,
-  MoreVertical,
   Edit2,
   Trash2,
   CheckCircle,
@@ -21,8 +20,7 @@ import {
   Mail,
   ChevronDown,
 } from "lucide-react";
-import TopNav from "@/components/top-nav";
-import { useDemoUser } from "@/hooks/use-demo-user";
+import { signOut } from "next-auth/react";
 
 interface JobApplication {
   id: string;
@@ -117,12 +115,37 @@ const priorityConfig = {
 };
 
 export default function TrackerPage() {
-  const { user } = useDemoUser();
+  const [user, setUser] = useState<{ name: string; planType: string }>({
+    name: "User",
+    planType: "free",
+  });
   const [applications, setApplications] = useState(mockApplications);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        if (!res.ok) return;
+        const body = await res.json();
+        setUser({
+          name: body.name || body.email?.split("@")?.[0] || "User",
+          planType: body.planType || "free",
+        });
+      } catch {
+        window.location.href = "/login";
+      }
+    };
+
+    void loadProfile();
+  }, []);
 
   const filteredApplications = applications.filter((app) => {
     const matchesSearch =
@@ -147,7 +170,47 @@ export default function TrackerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TopNav active="tracker" user={user} />
+      <nav className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                ResumeAI
+              </span>
+            </div>
+            <div className="flex items-center space-x-6">
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
+                Dashboard
+              </Link>
+              <Link href="/templates" className="text-gray-600 hover:text-gray-900">
+                Templates
+              </Link>
+              <Link href="/tracker" className="text-blue-600 font-medium">
+                Tracker
+              </Link>
+              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-sm text-gray-600 hover:text-red-600"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -241,7 +304,6 @@ export default function TrackerPage() {
             </div>
           ) : (
             filteredApplications.map((app) => {
-              const StatusIcon = statusConfig[app.status].icon;
               const isExpanded = expandedId === app.id;
 
               return (

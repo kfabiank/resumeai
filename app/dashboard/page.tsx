@@ -56,11 +56,10 @@ export default function DashboardPage() {
     void fetchDashboard();
   }, []);
 
-  const user = data?.user;
-  const stats = data?.stats;
-  const resumes = data?.resumes ?? [];
-
-  const userName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'User', [user]);
+  const userName = useMemo(
+    () => data?.user?.name || data?.user?.email?.split("@")[0] || "User",
+    [data]
+  );
 
   if (loading) {
     return (
@@ -80,6 +79,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const { user, stats, resumes } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">

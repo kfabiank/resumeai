@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { FileText, Plus, Download, Eye, Star, TrendingUp, Target, Clock, Loader2 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 type DashboardData = {
   user: {
@@ -106,6 +107,13 @@ export default function DashboardPage() {
                   {userName.charAt(0).toUpperCase()}
                 </div>
               </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-sm text-gray-600 hover:text-red-600"
+              >
+                Log out
+              </button>
             </div>
           </div>
         </div>

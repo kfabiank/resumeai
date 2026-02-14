@@ -82,6 +82,7 @@ export default function ResumeEditorPage() {
   const [technicalSkillInput, setTechnicalSkillInput] = useState("");
   const [softSkillInput, setSoftSkillInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportPreviewRef = useRef<HTMLDivElement | null>(null);
@@ -92,14 +93,22 @@ export default function ResumeEditorPage() {
     const fetchResume = async () => {
       try {
         const response = await fetch(`/api/resume/${id}`);
-        if (!response.ok) throw new Error("Resume not found");
+        if (response.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.error || "Resume not found");
+        }
         const data: ResumeApiResponse = await response.json();
         setResume(data);
         setContent(data.content);
         setSelectedTemplateId(data.templateId || "modern-professional");
         setUserPlan(data.user?.planType || "free");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to load resume:", error);
+        setLoadError(error?.message || "Could not load this resume");
       } finally {
         setIsLoading(false);
       }
@@ -262,10 +271,27 @@ export default function ResumeEditorPage() {
     });
   };
 
-  if (isLoading || !content || !resume) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (loadError || !content || !resume) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center bg-white border border-gray-200 rounded-xl p-8 max-w-md">
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">Resume not available</h1>
+          <p className="text-gray-600 mb-6">{loadError || "The requested resume does not exist."}</p>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }

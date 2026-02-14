@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FileText, Check, Lock, Eye, Star } from "lucide-react";
+import { signOut } from "next-auth/react";
 import {
   isTemplateId,
   TEMPLATE_CATALOG,
@@ -182,15 +183,22 @@ export default function TemplatesPage() {
               <Link href="/tracker" className="text-gray-600 hover:text-gray-900">
                 Tracker
               </Link>
-              <div className="flex items-center space-x-3">
+              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0)}
+                  {user.name.charAt(0).toUpperCase()}
                 </div>
-              </div>
+              </Link>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-sm text-gray-600 hover:text-red-600"
+              >
+                Log out
+              </button>
             </div>
           </div>
         </div>

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { isTemplateId } from '@/lib/template-catalog';
+import { getTemplateById } from '@/lib/template-catalog';
+import { ensureTemplateExists } from '@/lib/template-db';
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +20,19 @@ export async function GET(
 
     const resume = await prisma.resume.findUnique({
       where: { id },
+      include: {
+        user: {
+          select: {
+            planType: true,
+          },
+        },
+        template: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (!resume) {
@@ -55,6 +71,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
+    const templateId = body.templateId;
 
     const existingResume = await prisma.resume.findUnique({ where: { id } });
     if (!existingResume) {
@@ -70,11 +87,38 @@ export async function PATCH(
       );
     }
 
+    if (templateId && !isTemplateId(templateId)) {
+      return NextResponse.json(
+        { error: 'Invalid templateId' },
+        { status: 400 }
+      );
+    }
+
+    if (templateId) {
+      const tpl = getTemplateById(templateId);
+      const currentUser = await prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { planType: true },
+      });
+      if (!currentUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      if (tpl?.isPremium && currentUser.planType === 'free') {
+        return NextResponse.json(
+          { error: 'Upgrade required to use premium templates' },
+          { status: 403 }
+        );
+      }
+
+      await ensureTemplateExists(templateId);
+    }
+
     const resume = await prisma.resume.update({
       where: { id },
       data: {
         content: body.content,
         title: body.title,
+        ...(templateId ? { templateId } : {}),
         updatedAt: new Date(),
       },
     });

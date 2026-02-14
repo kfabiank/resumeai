@@ -22,6 +22,15 @@ const categories = [
   { id: "modern", name: "Modern" },
 ];
 
+const CATEGORY_ORDER: Record<string, number> = {
+  professional: 1,
+  tech: 2,
+  creative: 3,
+  executive: 4,
+  academic: 5,
+  modern: 6,
+};
+
 const NEW_TEMPLATE_IDS = new Set([
   "accountant-template",
   "consultant-template",
@@ -118,8 +127,13 @@ export default function TemplatesPage() {
     const aIsNew = NEW_TEMPLATE_IDS.has(a.id) ? 1 : 0;
     const bIsNew = NEW_TEMPLATE_IDS.has(b.id) ? 1 : 0;
     if (aIsNew !== bIsNew) return bIsNew - aIsNew;
+    const categoryDiff = (CATEGORY_ORDER[a.category] || 999) - (CATEGORY_ORDER[b.category] || 999);
+    if (categoryDiff !== 0) return categoryDiff;
     return a.name.localeCompare(b.name);
   });
+
+  const newTemplates = filteredTemplates.filter((t) => NEW_TEMPLATE_IDS.has(t.id));
+  const classicTemplates = filteredTemplates.filter((t) => !NEW_TEMPLATE_IDS.has(t.id));
 
   const canUseTemplate = (template: TemplateCatalogItem) => {
     return !template.isPremium || user.planType !== "free";
@@ -191,8 +205,187 @@ export default function TemplatesPage() {
         </div>
 
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredTemplates.map((template) => (
+        {selectedCategory === "all" && newTemplates.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">New Templates</h2>
+              <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                {newTemplates.length} new
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {newTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
+                    selectedTemplate === template.id
+                      ? "border-blue-500 ring-2 ring-blue-200"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {/* Template Preview */}
+                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
+                    <div className="absolute inset-0 overflow-hidden bg-white">
+                      <div className="origin-top-left scale-[0.28] w-[794px]">
+                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        New
+                      </span>
+                      {template.isPremium && (
+                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Pro
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+
+                    {canUseTemplate(template) ? (
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`w-full py-2 rounded-lg font-medium transition ${
+                          selectedTemplate === template.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
+                        }`}
+                      >
+                        {selectedTemplate === template.id ? (
+                          <span className="flex items-center justify-center">
+                            <Check className="h-4 w-4 mr-2" />
+                            Selected
+                          </span>
+                        ) : (
+                          "Select Template"
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Upgrade to Use
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedCategory === "all" && classicTemplates.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Classic Templates</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {classicTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
+                    selectedTemplate === template.id
+                      ? "border-blue-500 ring-2 ring-blue-200"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {/* Template Preview */}
+                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
+                    <div className="absolute inset-0 overflow-hidden bg-white">
+                      <div className="origin-top-left scale-[0.28] w-[794px]">
+                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      {template.isPopular && (
+                        <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Star className="h-3 w-3 mr-1" />
+                          Popular
+                        </span>
+                      )}
+                      {template.isPremium && (
+                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Pro
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Info */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+
+                    {canUseTemplate(template) ? (
+                      <button
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`w-full py-2 rounded-lg font-medium transition ${
+                          selectedTemplate === template.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
+                        }`}
+                      >
+                        {selectedTemplate === template.id ? (
+                          <span className="flex items-center justify-center">
+                            <Check className="h-4 w-4 mr-2" />
+                            Selected
+                          </span>
+                        ) : (
+                          "Select Template"
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/pricing"
+                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Upgrade to Use
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedCategory !== "all" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredTemplates.map((template) => (
             <div
               key={template.id}
               className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
@@ -276,8 +469,9 @@ export default function TemplatesPage() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Selected Template Action */}
         {selectedTemplateData && (

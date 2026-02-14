@@ -7,6 +7,7 @@ import {
   getTemplateById,
   isTemplateId,
 } from '@/lib/template-catalog';
+import { ensureTemplateExists } from '@/lib/template-db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -104,29 +105,7 @@ export async function POST(request: NextRequest) {
       'Professional Resume';
 
     // Ensure the selected template exists so the Resume -> Template relation is valid.
-    await prisma.template.upsert({
-      where: { id: selectedTemplate.id },
-      update: {
-        name: selectedTemplate.name,
-        category: selectedTemplate.category,
-        isPremium: selectedTemplate.isPremium,
-        isActive: true,
-      },
-      create: {
-        id: selectedTemplate.id,
-        name: selectedTemplate.name,
-        description: `${selectedTemplate.name} resume template`,
-        category: selectedTemplate.category,
-        thumbnail: '',
-        htmlStructure: `<div>${selectedTemplate.name}</div>`,
-        cssStyles: '',
-        colorScheme: {
-          gradient: selectedTemplate.colors,
-        },
-        isPremium: selectedTemplate.isPremium,
-        isActive: true,
-      },
-    });
+    await ensureTemplateExists(selectedTemplate.id);
 
     // Create resume in database
     const resume = await prisma.resume.create({

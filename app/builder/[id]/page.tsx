@@ -54,6 +54,157 @@ type ResumeApiResponse = {
   };
 };
 
+type AtsArea = "summary" | "experience" | "skills" | "format";
+type AtsSeverity = "high" | "medium" | "low";
+
+type AtsSuggestion = {
+  id: string;
+  area: AtsArea;
+  severity: AtsSeverity;
+  message: string;
+  action: string;
+};
+
+type AtsScanResult = {
+  score: number;
+  suggestions: AtsSuggestion[];
+};
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function wordCount(text: string) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function hasNumber(text: string) {
+  return /\d/.test(text);
+}
+
+function runAtsScan(content: ResumeContent): AtsScanResult {
+  const suggestions: AtsSuggestion[] = [];
+  let score = 100;
+
+  const summaryWords = wordCount(content.professionalSummary || "");
+  if (summaryWords < 40) {
+    score -= 12;
+    suggestions.push({
+      id: "summary-short",
+      area: "summary",
+      severity: "high",
+      message: "Professional summary is too short for ATS context.",
+      action: "Expand to 40-120 words with role, years, stack, and measurable impact.",
+    });
+  } else if (summaryWords > 140) {
+    score -= 6;
+    suggestions.push({
+      id: "summary-long",
+      area: "summary",
+      severity: "low",
+      message: "Professional summary is long and may reduce readability.",
+      action: "Keep it concise (40-120 words) and prioritize relevant keywords.",
+    });
+  }
+
+  if (content.experiences.length < 2) {
+    score -= 10;
+    suggestions.push({
+      id: "exp-count",
+      area: "experience",
+      severity: "high",
+      message: "Few experience entries detected.",
+      action: "Add at least 2 roles (or projects) with clear scope and outcomes.",
+    });
+  }
+
+  const allBullets = content.experiences.flatMap((exp) => exp.optimizedBullets || []);
+  const bulletsWithNumbers = allBullets.filter((bullet) => hasNumber(bullet)).length;
+  const quantifiedRatio = allBullets.length ? bulletsWithNumbers / allBullets.length : 0;
+
+  if (!allBullets.length) {
+    score -= 20;
+    suggestions.push({
+      id: "exp-bullets-missing",
+      area: "experience",
+      severity: "high",
+      message: "No experience bullets found.",
+      action: "Add 3-5 bullets per role focused on outcomes and technologies used.",
+    });
+  } else if (quantifiedRatio < 0.35) {
+    score -= 10;
+    suggestions.push({
+      id: "exp-quantified",
+      area: "experience",
+      severity: "medium",
+      message: "Most bullets are not quantified.",
+      action: "Add numbers, percentages, scale, or time impact in more bullets.",
+    });
+  }
+
+  const technicalCount = content.skills.technical.length;
+  const softCount = content.skills.soft.length;
+  if (technicalCount < 8) {
+    score -= 8;
+    suggestions.push({
+      id: "skills-technical",
+      area: "skills",
+      severity: "medium",
+      message: "Technical skills section looks limited.",
+      action: "Include 8+ technical skills aligned to your target role keywords.",
+    });
+  }
+  if (softCount < 4) {
+    score -= 4;
+    suggestions.push({
+      id: "skills-soft",
+      area: "skills",
+      severity: "low",
+      message: "Soft skills section is short.",
+      action: "Add 4-6 relevant soft skills (leadership, communication, ownership).",
+    });
+  }
+
+  const derivedKeywords = new Set([
+    ...content.keywords.map((k) => k.toLowerCase()),
+    ...content.experiences.flatMap((exp) => (exp.keywordsUsed || []).map((k) => k.toLowerCase())),
+    ...content.skills.technical.map((k) => k.toLowerCase()),
+  ]);
+  if (derivedKeywords.size < 12) {
+    score -= 8;
+    suggestions.push({
+      id: "keyword-density",
+      area: "format",
+      severity: "medium",
+      message: "Keyword coverage can improve for ATS matching.",
+      action: "Add job-specific terms in summary, bullets, and skills using exact wording.",
+    });
+  }
+
+  if (!content.personalInfo.name || !content.personalInfo.email || !content.personalInfo.phone) {
+    score -= 8;
+    suggestions.push({
+      id: "contact-fields",
+      area: "format",
+      severity: "high",
+      message: "Missing critical contact details.",
+      action: "Ensure name, email, and phone are present and correctly formatted.",
+    });
+  }
+
+  if (!suggestions.length) {
+    suggestions.push({
+      id: "great-shape",
+      area: "format",
+      severity: "low",
+      message: "Resume is in strong ATS shape.",
+      action: "Tailor keywords to each job description before applying.",
+    });
+  }
+
+  return { score: clampScore(score), suggestions };
+}
+
 function mapToLovableResumeData(content: ResumeContent): ResumeData {
   return {
     personalInfo: {
@@ -85,7 +236,12 @@ export default function ResumeEditorPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isScanningAts, setIsScanningAts] = useState(false);
+  const [atsResult, setAtsResult] = useState<AtsScanResult | null>(null);
   const exportPreviewRef = useRef<HTMLDivElement | null>(null);
+  const summaryRef = useRef<HTMLTextAreaElement | null>(null);
+  const experienceRef = useRef<HTMLDivElement | null>(null);
+  const skillsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -106,6 +262,7 @@ export default function ResumeEditorPage() {
         setContent(data.content);
         setSelectedTemplateId(data.templateId || "modern-professional");
         setUserPlan(data.user?.planType || "free");
+        setAtsResult(runAtsScan(data.content));
       } catch (error: any) {
         console.error("Failed to load resume:", error);
         setLoadError(error?.message || "Could not load this resume");
@@ -162,25 +319,125 @@ export default function ResumeEditorPage() {
 
   const handleExportPDF = async () => {
     if (!resume) return;
-    if (!exportPreviewRef.current) {
+    const exportNode = exportPreviewRef.current;
+    if (!exportNode) {
       alert("Preview is not ready yet");
       return;
     }
     setIsExporting(true);
 
     try {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        selection.removeAllRanges();
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      if ("fonts" in document) {
+        await document.fonts.ready;
+      }
+
       const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
       ]);
 
-      const canvas = await html2canvas(exportPreviewRef.current, {
+      const sandbox = document.createElement("div");
+      sandbox.style.position = "fixed";
+      sandbox.style.left = "-10000px";
+      sandbox.style.top = "0";
+      sandbox.style.zIndex = "-1";
+      sandbox.style.background = "#ffffff";
+      sandbox.style.width = `${exportNode.scrollWidth}px`;
+      sandbox.style.overflow = "hidden";
+
+      const clonedNode = exportNode.cloneNode(true) as HTMLDivElement;
+      clonedNode.setAttribute("data-template-id", selectedTemplateId);
+      clonedNode.style.position = "static";
+      clonedNode.style.left = "0";
+      clonedNode.style.top = "0";
+      clonedNode.style.opacity = "1";
+      clonedNode.style.pointerEvents = "none";
+
+      sandbox.appendChild(clonedNode);
+      document.body.appendChild(sandbox);
+
+      const baseCanvasOptions = {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        windowWidth: exportPreviewRef.current.scrollWidth,
-        windowHeight: exportPreviewRef.current.scrollHeight,
-      });
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: clonedNode.scrollWidth,
+        windowHeight: clonedNode.scrollHeight,
+        onclone: (clonedDoc: Document) => {
+          clonedDoc.getSelection()?.removeAllRanges();
+          const style = clonedDoc.createElement("style");
+          style.textContent = `
+            * { animation: none !important; transition: none !important; caret-color: transparent !important; }
+            * , *::before, *::after {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            ::selection { background: transparent !important; color: inherit !important; }
+            [data-template-id="tech-minimal"] span,
+            [data-template-id="startup-modern"] span {
+              line-height: 1.1 !important;
+            }
+            [data-template-id="tech-minimal"] section:nth-of-type(3) span {
+              display: inline-block !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        },
+      };
+
+      const isCanvasBlank = (target: HTMLCanvasElement) => {
+        if (!target.width || !target.height) return true;
+        const ctx = target.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return true;
+
+        const sampleGrid = 12;
+        const stepX = Math.max(1, Math.floor(target.width / sampleGrid));
+        const stepY = Math.max(1, Math.floor(target.height / sampleGrid));
+
+        for (let y = 0; y < target.height; y += stepY) {
+          for (let x = 0; x < target.width; x += stepX) {
+            const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data;
+            const isTransparent = a === 0;
+            const isWhite = r > 245 && g > 245 && b > 245;
+            if (!isTransparent && !isWhite) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      };
+
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await html2canvas(clonedNode, {
+          ...baseCanvasOptions,
+          foreignObjectRendering: true,
+        });
+        if (isCanvasBlank(canvas)) {
+          canvas = await html2canvas(clonedNode, {
+            ...baseCanvasOptions,
+            foreignObjectRendering: false,
+          });
+        }
+      } catch {
+        canvas = await html2canvas(clonedNode, {
+          ...baseCanvasOptions,
+          foreignObjectRendering: false,
+        });
+      }
+
+      sandbox.remove();
 
       const pdf = new JsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -271,6 +528,36 @@ export default function ResumeEditorPage() {
     });
   };
 
+  const handleRunAtsScan = () => {
+    if (!content) return;
+    setIsScanningAts(true);
+    // Simulates scan state and keeps UI responsive.
+    window.setTimeout(() => {
+      setAtsResult(runAtsScan(content));
+      setIsScanningAts(false);
+    }, 250);
+  };
+
+  const jumpToArea = (area: AtsArea) => {
+    if (area === "summary") {
+      summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      summaryRef.current?.focus();
+      return;
+    }
+    if (area === "experience") {
+      experienceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    if (area === "skills") {
+      skillsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+  };
+
+  const highlightSummary = !!atsResult?.suggestions.some((s) => s.area === "summary");
+  const highlightExperience = !!atsResult?.suggestions.some((s) => s.area === "experience");
+  const highlightSkills = !!atsResult?.suggestions.some((s) => s.area === "skills");
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -309,9 +596,18 @@ export default function ResumeEditorPage() {
             <div className="flex items-center space-x-3">
               <div className="bg-green-100 px-4 py-2 rounded-lg">
                 <span className="text-sm text-green-700 font-medium">
-                  ATS Score: <span className="text-xl font-bold">{resume.atsScore}</span>/100
+                  ATS Score: <span className="text-xl font-bold">{atsResult?.score ?? resume.atsScore}</span>/100
                 </span>
               </div>
+
+              <button
+                onClick={handleRunAtsScan}
+                disabled={isScanningAts}
+                className="border border-emerald-300 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition inline-flex items-center text-sm font-medium disabled:opacity-50"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isScanningAts ? "Scanning..." : "Run ATS Scan"}
+              </button>
 
               <button
                 onClick={handleSave}
@@ -343,6 +639,41 @@ export default function ResumeEditorPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-6">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+              <div className="flex items-center mb-4">
+                <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
+                <h3 className="font-bold text-gray-900">ATS Insights</h3>
+              </div>
+              <div className="space-y-3 text-sm">
+                {(atsResult?.suggestions || []).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => jumpToArea(item.area)}
+                    className="w-full text-left rounded-lg border border-transparent hover:border-blue-200 hover:bg-white/60 p-2 transition"
+                  >
+                    <div className="flex items-start">
+                      <span
+                        className={`mr-2 ${
+                          item.severity === "high"
+                            ? "text-red-600"
+                            : item.severity === "medium"
+                            ? "text-yellow-700"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {item.severity === "high" ? "!" : item.severity === "medium" ? "→" : "✓"}
+                      </span>
+                      <span className="text-gray-800">
+                        <span className="font-medium">{item.message}</span>{" "}
+                        <span className="text-gray-600">{item.action}</span>
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Edit Resume</h2>
 
@@ -372,14 +703,22 @@ export default function ResumeEditorPage() {
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Professional Summary</label>
                 <textarea
+                  ref={summaryRef}
                   value={content.professionalSummary}
                   onChange={(e) => setContent({ ...content, professionalSummary: e.target.value })}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm ${
+                    highlightSummary ? "border-amber-400 bg-amber-50/40" : "border-gray-300"
+                  }`}
                 />
               </div>
 
-              <div className="mb-6">
+              <div
+                ref={experienceRef}
+                className={`mb-6 rounded-lg p-3 ${
+                  highlightExperience ? "border border-amber-400 bg-amber-50/30" : ""
+                }`}
+              >
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Experience</h3>
                 {content.experiences.map((exp, expIndex) => (
                   <div key={expIndex} className="mb-4 pb-4 border-b last:border-0">
@@ -403,7 +742,12 @@ export default function ResumeEditorPage() {
                 ))}
               </div>
 
-              <div>
+              <div
+                ref={skillsRef}
+                className={`rounded-lg p-3 ${
+                  highlightSkills ? "border border-amber-400 bg-amber-50/30" : ""
+                }`}
+              >
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Skills</h3>
                 <div className="space-y-3">
                   <div>
@@ -485,18 +829,6 @@ export default function ResumeEditorPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
-              <div className="flex items-center mb-4">
-                <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
-                <h3 className="font-bold text-gray-900">ATS Insights</h3>
-              </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start"><span className="text-green-600 mr-2">✓</span><span className="text-gray-700">Strong keyword match - resume includes key terms from job description</span></div>
-                <div className="flex items-start"><span className="text-green-600 mr-2">✓</span><span className="text-gray-700">Quantifiable achievements - metrics improve credibility</span></div>
-                <div className="flex items-start"><span className="text-yellow-600 mr-2">→</span><span className="text-gray-700">Consider adding more industry-specific certifications</span></div>
               </div>
             </div>
           </div>

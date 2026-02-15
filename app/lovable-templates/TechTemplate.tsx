@@ -75,7 +75,7 @@ const TechTemplate = ({ data }: Props) => {
           {skills.technical.map((skill, i) => (
             <span
               key={i}
-              className="rounded-sm px-2 py-0.5 text-xs font-medium"
+              className="inline-flex items-center rounded-sm px-2 py-1 text-xs font-medium leading-none"
               style={{ background: "#0f172a", color: "#10b981" }}
             >
               {skill}

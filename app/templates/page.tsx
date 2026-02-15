@@ -121,7 +121,7 @@ export default function TemplatesPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/profile");
+        const res = await fetch("/api/profile", { cache: "no-store" });
         if (!res.ok) return;
         const body = await res.json();
         setUser({

@@ -3,13 +3,21 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { PLAN_LIMITS } from '@/lib/stripe';
 
+export const dynamic = 'force-dynamic';
+
+const noStoreHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET() {
   try {
     const session = await getAuthSession();
     const userId = session?.user?.id;
 
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: noStoreHeaders });
     }
 
     const user = await prisma.user.findUnique({
@@ -23,7 +31,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404, headers: noStoreHeaders });
     }
 
     const startOfMonth = new Date();
@@ -74,11 +82,11 @@ export async function GET() {
         templateName: r.template?.name || r.templateId,
         templateId: r.templateId,
       })),
-    });
+    }, { headers: noStoreHeaders });
   } catch (error: any) {
     return NextResponse.json(
       { error: 'Failed to fetch dashboard data', message: error.message },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     );
   }
 }

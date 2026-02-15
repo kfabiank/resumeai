@@ -31,7 +31,7 @@ export default function BillingPage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/profile");
+        const res = await fetch("/api/profile", { cache: "no-store" });
         if (res.status === 401) {
           window.location.href = "/login";
           return;

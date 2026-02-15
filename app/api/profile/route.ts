@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+const noStoreHeaders = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET() {
   const session = await getAuthSession();
   const userId = session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: noStoreHeaders });
   }
 
   const user = await prisma.user.findUnique({
@@ -16,7 +24,7 @@ export async function GET() {
   });
 
   if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    return NextResponse.json({ error: 'User not found' }, { status: 404, headers: noStoreHeaders });
   }
 
   return NextResponse.json({
@@ -35,7 +43,7 @@ export async function GET() {
     linkedinUrl: user.profile?.linkedinUrl || '',
     portfolioUrl: user.profile?.portfolioUrl || '',
     githubUrl: user.profile?.githubUrl || '',
-  });
+  }, { headers: noStoreHeaders });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -43,7 +51,7 @@ export async function PATCH(request: NextRequest) {
   const userId = session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: noStoreHeaders });
   }
 
   const body = (await request.json()) as {
@@ -62,7 +70,7 @@ export async function PATCH(request: NextRequest) {
   const name = body.name?.trim();
 
   if (!email) {
-    return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: noStoreHeaders });
   }
 
   try {
@@ -105,14 +113,14 @@ export async function PATCH(request: NextRequest) {
     if (error.code === 'P2002') {
       return NextResponse.json(
         { error: 'That email is already in use' },
-        { status: 409 }
+        { status: 409, headers: noStoreHeaders }
       );
     }
     return NextResponse.json(
       { error: 'Failed to update profile' },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     );
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true }, { headers: noStoreHeaders });
 }

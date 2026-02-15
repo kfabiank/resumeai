@@ -117,6 +117,11 @@ if (googleClientId && googleClientSecret) {
     GoogleProvider({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
+      authorization: {
+        params: {
+          prompt: 'select_account',
+        },
+      },
     })
   );
 }
@@ -190,17 +195,53 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
+      const tokenSub = typeof token.sub === 'string' ? token.sub : undefined;
+
       if (user) {
         token.id = user.id;
-        token.role = user.email?.toLowerCase() === rootAdminEmail ? 'admin' : 'user';
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
+      } else if (tokenSub) {
+        token.id = tokenSub;
       }
+
+      // On OAuth sign-in, update DB user with provider profile data
+      if (account?.provider === 'google' && profile) {
+        const googleProfile = profile as { name?: string; email?: string; picture?: string };
+        const userId = (token.id as string) || tokenSub;
+        if (userId && googleProfile.email) {
+          try {
+            const updated = await prisma.user.update({
+              where: { id: userId },
+              data: {
+                name: googleProfile.name || token.name as string,
+                email: googleProfile.email,
+                image: googleProfile.picture || null,
+              },
+            });
+            token.name = updated.name;
+            token.email = updated.email;
+            token.picture = updated.image;
+          } catch {
+            // User might not exist yet; PrismaAdapter will create it
+          }
+        }
+      }
+
+      const tokenEmail = typeof token.email === 'string' ? token.email.toLowerCase() : '';
+      token.role = tokenEmail && tokenEmail === rootAdminEmail ? 'admin' : 'user';
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = ((token.id as string | undefined) || (token.sub as string | undefined) || '') as string;
         session.user.role = token.role as string | undefined;
+        // Keep session data in sync with token (which reflects DB/provider data)
+        if (token.name) session.user.name = token.name as string;
+        if (token.email) session.user.email = token.email as string;
+        if (token.picture) session.user.image = token.picture as string;
       }
 
       return session;

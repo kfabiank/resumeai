@@ -34,11 +34,12 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sortByScore, setSortByScore] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await fetch('/api/dashboard');
+        const res = await fetch('/api/dashboard', { cache: 'no-store' });
         if (res.status === 401) {
           window.location.href = '/login';
           return;
@@ -60,6 +61,27 @@ export default function DashboardPage() {
     () => data?.user?.name || data?.user?.email?.split("@")[0] || "User",
     [data]
   );
+
+  const sortedResumes = useMemo(() => {
+    const resumes = data?.resumes || [];
+    if (!sortByScore || resumes.length === 0) return resumes;
+    return [...resumes].sort((a, b) => {
+      const scoreA = a.atsScore || 0;
+      const scoreB = b.atsScore || 0;
+      return scoreB - scoreA; // Sort descending
+    });
+  }, [data?.resumes, sortByScore]);
+
+  const handleAvgScoreClick = () => {
+    setSortByScore(true);
+    // Scroll to resumes section
+    setTimeout(() => {
+      const resumesSection = document.getElementById('resumes-section');
+      if (resumesSection) {
+        resumesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
 
   if (loading) {
     return (
@@ -138,13 +160,19 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-600">Total Resumes</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <button
+            onClick={handleAvgScoreClick}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-green-300 hover:shadow-md transition-all cursor-pointer text-left w-full"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="bg-green-100 p-3 rounded-lg"><TrendingUp className="h-6 w-6 text-green-600" /></div>
               <span className="text-2xl font-bold text-gray-900">{stats.avgScore}</span>
             </div>
             <p className="text-sm text-gray-600">Avg. ATS Score</p>
-          </div>
+            {sortByScore && (
+              <p className="text-xs text-green-600 mt-2 font-medium">Sorted by score ↓</p>
+            )}
+          </button>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -176,7 +204,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div id="resumes-section" className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">My Resumes</h2>
             {user.planType === "free" && (
@@ -186,7 +214,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {resumes.length === 0 ? (
+          {sortedResumes.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No resumes yet</h3>
@@ -198,7 +226,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {resumes.map((resume) => (
+              {sortedResumes.map((resume) => (
                 <div key={resume.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

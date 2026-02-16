@@ -105,35 +105,41 @@ export default function DashboardPage() {
   const { user, stats, resumes } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 ResumeAI
               </span>
             </div>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-blue-600 font-medium">Dashboard</Link>
-              <Link href="/templates" className="text-gray-600 hover:text-gray-900">Templates</Link>
-              <Link href="/tracker" className="text-gray-600 hover:text-gray-900">Tracker</Link>
-              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{userName}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
+            <div className="flex items-center space-x-1">
+              <Link href="/dashboard" className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                Dashboard
+              </Link>
+              <Link href="/templates" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
+                Templates
+              </Link>
+              <Link href="/tracker" className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
+                Tracker
+              </Link>
+              <Link href="/profile" className="flex items-center space-x-2.5 ml-4 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors group">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-slate-900">{userName}</p>
+                  <p className="text-xs text-slate-500 capitalize">{user.planType} Plan</p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold shadow-md shadow-blue-500/30 group-hover:shadow-lg transition-shadow">
                   {userName.charAt(0).toUpperCase()}
                 </div>
               </Link>
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-sm text-gray-600 hover:text-red-600"
+                className="ml-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
               >
                 Log out
               </button>
@@ -142,127 +148,142 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {userName}!</h1>
-          <p className="text-gray-600">
-            You've created {user.resumesThisMonth}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-slate-900 mb-3 tracking-tight">Welcome back, {userName}!</h1>
+          <p className="text-slate-600 text-lg">
+            You've created <span className="font-semibold text-slate-900">{user.resumesThisMonth}</span>
             {user.resumesLimit === -1 ? ' of unlimited' : ` of ${user.resumesLimit}`} resumes this month.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-blue-100 p-3 rounded-lg"><FileText className="h-6 w-6 text-blue-600" /></div>
-              <span className="text-2xl font-bold text-gray-900">{stats.totalResumes}</span>
+              <div className="bg-blue-50 p-3 rounded-xl">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+              <span className="text-3xl font-bold text-slate-900">{stats.totalResumes}</span>
             </div>
-            <p className="text-sm text-gray-600">Total Resumes</p>
+            <p className="text-sm font-medium text-slate-600">Total Resumes</p>
           </div>
 
           <button
             onClick={handleAvgScoreClick}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-green-300 hover:shadow-md transition-all cursor-pointer text-left w-full"
+            className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-100/50 transition-all duration-200 cursor-pointer text-left w-full group"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-green-100 p-3 rounded-lg"><TrendingUp className="h-6 w-6 text-green-600" /></div>
-              <span className="text-2xl font-bold text-gray-900">{stats.avgScore}</span>
+              <div className="bg-emerald-50 p-3 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                <TrendingUp className="h-6 w-6 text-emerald-600" />
+              </div>
+              <span className="text-3xl font-bold text-slate-900">{stats.avgScore}</span>
             </div>
-            <p className="text-sm text-gray-600">Avg. ATS Score</p>
+            <p className="text-sm font-medium text-slate-600">Avg. ATS Score</p>
             {sortByScore && (
-              <p className="text-xs text-green-600 mt-2 font-medium">Sorted by score ↓</p>
+              <p className="text-xs text-emerald-600 mt-2 font-semibold flex items-center gap-1">
+                <span>Sorted by score</span>
+                <span>↓</span>
+              </p>
             )}
           </button>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-purple-100 p-3 rounded-lg"><Target className="h-6 w-6 text-purple-600" /></div>
-              <span className="text-2xl font-bold text-gray-900">{stats.applications}</span>
+              <div className="bg-purple-50 p-3 rounded-xl">
+                <Target className="h-6 w-6 text-purple-600" />
+              </div>
+              <span className="text-3xl font-bold text-slate-900">{stats.applications}</span>
             </div>
-            <p className="text-sm text-gray-600">Applications</p>
+            <p className="text-sm font-medium text-slate-600">Applications</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-md hover:border-slate-300 transition-all duration-200">
             <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-100 p-3 rounded-lg"><Star className="h-6 w-6 text-orange-600" /></div>
-              <span className="text-2xl font-bold text-gray-900">{stats.interviews}</span>
+              <div className="bg-amber-50 p-3 rounded-xl">
+                <Star className="h-6 w-6 text-amber-600" />
+              </div>
+              <span className="text-3xl font-bold text-slate-900">{stats.interviews}</span>
             </div>
-            <p className="text-sm text-gray-600">Interviews</p>
+            <p className="text-sm font-medium text-slate-600">Interviews</p>
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-8 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl shadow-blue-500/20 p-8 mb-10 overflow-hidden relative">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-20"></div>
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Create Your Next Resume</h2>
-              <p className="text-blue-100">Optimized for ATS, powered by AI, ready in minutes</p>
+              <p className="text-blue-100 text-lg">Optimized for ATS, powered by AI, ready in minutes</p>
             </div>
-            <Link href="/builder/new" className="bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition font-semibold inline-flex items-center shadow-xl">
+            <Link href="/builder/new" className="bg-white text-blue-600 px-6 py-3.5 rounded-xl hover:bg-blue-50 transition-all font-semibold inline-flex items-center shadow-lg hover:shadow-xl hover:scale-105 transform duration-200 whitespace-nowrap">
               <Plus className="mr-2 h-5 w-5" />
               New Resume
             </Link>
           </div>
         </div>
 
-        <div id="resumes-section" className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">My Resumes</h2>
+        <div id="resumes-section" className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">My Resumes</h2>
             {user.planType === "free" && (
-              <Link href="/pricing" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                Upgrade to create unlimited →
+              <Link href="/pricing" className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
+                Upgrade to create unlimited
+                <span>→</span>
               </Link>
             )}
           </div>
 
           {sortedResumes.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No resumes yet</h3>
-              <p className="text-gray-600 mb-6">Create your first ATS-optimized resume</p>
-              <Link href="/builder/new" className="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-100 mb-6">
+                <FileText className="h-10 w-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">No resumes yet</h3>
+              <p className="text-slate-600 mb-8 max-w-md mx-auto">Create your first ATS-optimized resume and start landing more interviews</p>
+              <Link href="/builder/new" className="inline-flex items-center bg-blue-600 text-white px-6 py-3.5 rounded-xl hover:bg-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform duration-200">
                 <Plus className="mr-2 h-5 w-5" />
                 Create Resume
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {sortedResumes.map((resume) => (
-                <div key={resume.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{resume.title}</h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {new Date(resume.updatedAt).toLocaleDateString()}
+                <div key={resume.id} className="border border-slate-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md hover:shadow-blue-50/50 transition-all duration-200 group">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">{resume.title}</h3>
+                      <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="h-4 w-4" />
+                          {new Date(resume.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        <span>•</span>
-                        <span>{resume.templateName}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="text-slate-600 font-medium">{resume.templateName}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4">
-                      <div className="text-center">
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <div className="text-center px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
                         <div className={`text-2xl font-bold ${
                           (resume.atsScore || 0) >= 90
-                            ? "text-green-600"
+                            ? "text-emerald-600"
                             : (resume.atsScore || 0) >= 75
                             ? "text-blue-600"
-                            : "text-yellow-600"
+                            : "text-amber-600"
                         }`}>
                           {resume.atsScore || 0}
                         </div>
-                        <div className="text-xs text-gray-500">ATS Score</div>
+                        <div className="text-xs text-slate-500 font-medium mt-0.5">ATS Score</div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <Link href={`/builder/${resume.id}`} className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Preview/Edit">
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/builder/${resume.id}`} className="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Preview/Edit">
                           <Eye className="h-5 w-5" />
                         </Link>
-                        <button className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition" title="Download">
+                        <button className="p-2.5 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Download">
                           <Download className="h-5 w-5" />
                         </button>
-                        <Link href={`/builder/${resume.id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                        <Link href={`/builder/${resume.id}`} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all text-sm font-semibold shadow-sm hover:shadow-md">
                           Edit
                         </Link>
                       </div>

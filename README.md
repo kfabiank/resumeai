@@ -543,6 +543,28 @@ SYNTHETIC_TAG="SYNTH"
 - Al subir `.docx`, la app parsea el contenido y crea un resume nuevo usando el template seleccionado.
 - Te redirige automáticamente a `/builder/[id]` para editar y cambiar template si quieres.
 
+### Integrating from `resumeai-lovable`
+
+Usa este script para registrar un template de Lovable en este repo:
+
+```bash
+npm run template:register -- \
+  --source "../resumeai-lovable/src/templates/FrontendTemplate.tsx" \
+  --component "FrontEndTemplate" \
+  --id "frontend-template-v2" \
+  --name "Front-End Craft v2" \
+  --description "Modern frontend-focused layout from Lovable." \
+  --category "tech" \
+  --categoryLabel "Tech" \
+  --isPremium false \
+  --colors "from-sky-500 to-indigo-700"
+```
+
+Qué actualiza automáticamente:
+- `app/lovable-templates/<Component>.tsx` (copia el source)
+- `app/lovable-templates/TemplateRenderer.tsx` (import + case)
+- `lib/template-catalog.ts` (entrada del template)
+
 ### LinkedIn Data Export (CSV) para Experience/Education/Skills
 
 El login OAuth de LinkedIn normalmente solo entrega datos básicos.  

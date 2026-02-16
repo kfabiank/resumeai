@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { getProviders, signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, ArrowRight, FileText } from 'lucide-react';
 
 type ProviderMap = Awaited<ReturnType<typeof getProviders>>;
@@ -31,13 +30,13 @@ function LinkedInMark() {
 }
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
   const [providers, setProviders] = useState<ProviderMap | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
     void getProviders().then(setProviders);
@@ -46,7 +45,12 @@ export default function LoginPage() {
   const hasGoogle = providers ? !!providers.google : true;
   const hasLinkedIn = providers ? !!providers.linkedin : true;
   const hasEmail = !!providers?.email;
-  const oauthError = searchParams.get('error');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    setOauthError(params.get('error'));
+  }, []);
 
   useEffect(() => {
     if (!oauthError) return;

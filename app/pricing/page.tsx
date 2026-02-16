@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -63,8 +62,7 @@ const faqs = [
 ];
 
 export default function PricingPage() {
-  const searchParams = useSearchParams();
-  const canceled = searchParams.get("canceled");
+  const [canceled, setCanceled] = useState(false);
 
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -81,6 +79,12 @@ export default function PricingPage() {
       }
     >
   >({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setCanceled(params.get("canceled") === "true");
+  }, []);
 
   useEffect(() => {
     const loadPlans = async () => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FileText, Zap, Target, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, BarChart3, X } from "lucide-react";
 import { isTemplateId, TEMPLATE_CATALOG } from "@/lib/template-catalog";
 
@@ -431,13 +431,14 @@ function ATSDemo() {
 export default function LandingPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [queryPreview, setQueryPreview] = useState<string | null>(null);
   const previewTemplate = TEMPLATE_CATALOG.find((t) => t.id === previewTemplateId) || null;
-  const queryPreview = searchParams.get("preview");
 
   const setPreviewWithUrl = (templateId: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const currentSearch =
+      typeof window === "undefined" ? "" : window.location.search;
+    const params = new URLSearchParams(currentSearch);
 
     if (templateId) {
       params.set("preview", templateId);
@@ -449,7 +450,14 @@ export default function LandingPage() {
     const nextUrl = query ? `${pathname}?${query}#templates` : `${pathname}#templates`;
     router.replace(nextUrl, { scroll: false });
     setPreviewTemplateId(templateId);
+    setQueryPreview(templateId);
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setQueryPreview(params.get("preview"));
+  }, []);
 
   useEffect(() => {
     if (queryPreview && isTemplateId(queryPreview)) {

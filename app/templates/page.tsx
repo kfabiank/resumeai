@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { FileText, Check, Lock, Eye, Star } from "lucide-react";
 import { signOut } from "next-auth/react";
 import {
@@ -103,7 +102,6 @@ const PREVIEW_DATA: ResumeData = {
 };
 
 export default function TemplatesPage() {
-  const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [user, setUser] = useState<{ name: string; planType: string }>({
@@ -112,11 +110,12 @@ export default function TemplatesPage() {
   });
 
   useEffect(() => {
-    const queryTemplate = searchParams.get("template");
+    if (typeof window === "undefined") return;
+    const queryTemplate = new URLSearchParams(window.location.search).get("template");
     if (queryTemplate && isTemplateId(queryTemplate)) {
       setSelectedTemplate(queryTemplate);
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     const loadProfile = async () => {

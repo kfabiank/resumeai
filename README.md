@@ -565,6 +565,24 @@ Qué actualiza automáticamente:
 - `app/lovable-templates/TemplateRenderer.tsx` (import + case)
 - `lib/template-catalog.ts` (entrada del template)
 
+### Staging UI Migration Script (Lovable -> Next.js)
+
+Para traer el diseño de `resume-ai-connector` sin sobrescribir tu app Next.js:
+
+```bash
+npm run ui:migrate:lovable -- --source ../resume-ai-connector --clean
+```
+
+Esto copia archivos a:
+- `.migration/lovable/src/components`
+- `.migration/lovable/src/pages`
+- `.migration/lovable/src/hooks`
+- `.migration/lovable/src/lib`
+- `.migration/lovable/public`
+- `.migration/lovable/meta/*` (configs de referencia)
+
+Luego migra manualmente por página desde staging hacia `app/*/page.tsx`.
+
 ### LinkedIn Data Export (CSV) para Experience/Education/Skills
 
 El login OAuth de LinkedIn normalmente solo entrega datos básicos.  

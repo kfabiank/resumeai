@@ -18,6 +18,8 @@ const emailFrom = process.env.EMAIL_FROM || process.env.FROM_EMAIL;
 const rootAdminEmail = process.env.ROOT_ADMIN_EMAIL?.toLowerCase();
 const rootAdminPassword = process.env.ROOT_ADMIN_PASSWORD;
 const qaTestPassword = process.env.QA_TEST_PASSWORD;
+const syntheticEmailPrefix = process.env.SYNTHETIC_EMAIL_PREFIX || 'synthetic';
+const syntheticEmailDomain = process.env.SYNTHETIC_EMAIL_DOMAIN || 'synthetic.resumeai.local';
 const qaTestEmails = new Set([
   'qa-free@resumeai.local',
   'qa-pro@resumeai.local',
@@ -81,6 +83,23 @@ providers.push(
         });
 
         return qaUser;
+      }
+
+      // Development-only synthetic users login.
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        qaTestPassword &&
+        email.startsWith(`${syntheticEmailPrefix}-`) &&
+        email.endsWith(`@${syntheticEmailDomain}`) &&
+        password === qaTestPassword
+      ) {
+        const syntheticUser = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (syntheticUser) {
+          return syntheticUser;
+        }
       }
 
       if (!rootAdminEmail || !rootAdminPassword) {

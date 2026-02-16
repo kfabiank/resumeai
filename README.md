@@ -511,6 +511,16 @@ PAYPAL_PREMIUM_ANNUAL_PLAN=""
 
 # App
 NEXT_PUBLIC_APP_URL=""
+
+# Synthetic data seeding (opcional, para QA/automation)
+SYNTHETIC_USERS_PER_PLAN="3"
+SYNTHETIC_RESUMES_FREE="2"
+SYNTHETIC_RESUMES_PRO="4"
+SYNTHETIC_RESUMES_PREMIUM="6"
+SYNTHETIC_APPS_PER_USER="8"
+SYNTHETIC_EMAIL_PREFIX="synthetic"
+SYNTHETIC_EMAIL_DOMAIN="synthetic.resumeai.local"
+SYNTHETIC_TAG="SYNTH"
 ```
 
 ---
@@ -525,7 +535,75 @@ npm run test             # Tests con Vitest
 npm run test:coverage    # Tests con coverage
 npm run db:push          # Aplica schema.prisma a DB
 npm run db:studio        # Abre Prisma Studio
+npm run db:seed:synthetic # Crea usuarios/datos sintéticos para QA automation
+npm run db:reset:synthetic # Elimina solo los datos sintéticos creados por seed
 npm run stripe:listen    # Forwardea webhooks Stripe a localhost
+```
+
+---
+
+## Synthetic Data para QA Automation
+
+Estos scripts crean data realista para pruebas E2E/API sin tocar usuarios reales.
+
+- Script de seed: `npm run db:seed:synthetic`
+- Script de cleanup: `npm run db:reset:synthetic`
+- Patrón de usuarios creados: `synthetic-{free|pro|premium}-{n}@synthetic.resumeai.local`
+- Los registros se marcan con `SYNTH` en `name/notes` para trazabilidad.
+
+Notas:
+- Los usuarios sintéticos **no** habilitan login por credentials automáticamente.
+- El login por credentials sigue limitado a root + QA (`qa-*.local`) según `lib/auth.ts`.
+
+### Cómo Probar (Paso a Paso)
+
+1. Asegúrate de tener DB conectada y schema aplicado:
+```bash
+npm run db:push
+```
+
+2. (Opcional) Ajusta volumen en `.env`:
+```env
+SYNTHETIC_USERS_PER_PLAN="3"
+SYNTHETIC_RESUMES_FREE="2"
+SYNTHETIC_RESUMES_PRO="4"
+SYNTHETIC_RESUMES_PREMIUM="6"
+SYNTHETIC_APPS_PER_USER="8"
+```
+
+3. Crea data sintética:
+```bash
+npm run db:seed:synthetic
+```
+
+4. Levanta la app:
+```bash
+npm run dev
+```
+
+5. Valida desde UI con usuarios QA (credentials):
+   - Login en `/login` con `qa-free@resumeai.local`, `qa-pro@resumeai.local`, `qa-premium@resumeai.local`
+   - Password: valor de `QA_TEST_PASSWORD`
+   - Revisa `/dashboard` (resumes y ATS), `/tracker` (applications/reminders/calendario), `/templates` (locks por plan)
+
+6. Ver data sintética en la app (credentials, solo dev):
+   - Login en `/login` con un usuario sembrado, por ejemplo:
+     - `synthetic-free-1@synthetic.resumeai.local`
+     - `synthetic-pro-1@synthetic.resumeai.local`
+     - `synthetic-premium-1@synthetic.resumeai.local`
+   - Password: el mismo `QA_TEST_PASSWORD`
+   - Luego entra a `/dashboard` y `/tracker` para ver sus resumes/aplicaciones.
+
+7. Validación rápida por API:
+```bash
+curl http://localhost:3000/api/debug/session
+curl http://localhost:3000/api/dashboard
+curl http://localhost:3000/api/tracker/reminders
+```
+
+8. Limpia todo lo sintético al terminar:
+```bash
+npm run db:reset:synthetic
 ```
 
 ---

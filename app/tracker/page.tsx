@@ -22,6 +22,7 @@ import {
   Loader2,
   X,
   UserPlus,
+  Bell,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -45,6 +46,16 @@ interface JobApplication {
   jobUrl: string | null;
   notes: string | null;
   contacts: Contact[] | null;
+}
+
+interface ReminderItem {
+  id: string;
+  applicationId: string;
+  type: "interview" | "followup";
+  dueDate: string;
+  company: string;
+  position: string;
+  urgency: "overdue" | "today" | "upcoming";
 }
 
 type FormData = {
@@ -104,6 +115,13 @@ export default function TrackerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<string>("applied");
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [remindersLoading, setRemindersLoading] = useState(true);
+  const [downloadingCalendar, setDownloadingCalendar] = useState(false);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -132,6 +150,20 @@ export default function TrackerPage() {
     }
   }, []);
 
+  const loadReminders = useCallback(async () => {
+    setRemindersLoading(true);
+    try {
+      const res = await fetch("/api/tracker/reminders", { cache: "no-store" });
+      if (!res.ok) return;
+      const body = await res.json();
+      setReminders(body.reminders || []);
+    } catch {
+      // silently fail
+    } finally {
+      setRemindersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -153,7 +185,8 @@ export default function TrackerPage() {
 
     void loadProfile();
     void loadApplications();
-  }, [loadApplications]);
+    void loadReminders();
+  }, [loadApplications, loadReminders]);
 
   // Filtering (client-side)
   const filteredApplications = applications.filter((app) => {
@@ -163,6 +196,10 @@ export default function TrackerPage() {
     const matchesStatus = statusFilter === "all" || app.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const allFilteredSelected =
+    filteredApplications.length > 0 &&
+    filteredApplications.every((a) => selectedIds.includes(a.id));
 
   const stats = {
     total: applications.length,
@@ -241,6 +278,7 @@ export default function TrackerPage() {
 
       closeModal();
       await loadApplications();
+      await loadReminders();
     } catch {
       setFormError("Network error. Please try again.");
     } finally {
@@ -255,6 +293,7 @@ export default function TrackerPage() {
       await fetch(`/api/tracker/${deleteId}`, { method: "DELETE" });
       setDeleteId(null);
       await loadApplications();
+      await loadReminders();
     } catch {
       // silently fail
     } finally {
@@ -273,9 +312,109 @@ export default function TrackerPage() {
         setApplications((apps) =>
           apps.map((a) => (a.id === id ? { ...a, status: newStatus as JobApplication["status"] } : a))
         );
+        await loadReminders();
       }
     } catch {
       // silently fail
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleSelectAllFiltered() {
+    if (allFilteredSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredApplications.some((a) => a.id === id)));
+      return;
+    }
+    const filteredIds = filteredApplications.map((a) => a.id);
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+  }
+
+  async function runBulkDelete() {
+    if (!selectedIds.length) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/tracker/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds, action: "delete" }),
+      });
+      if (!res.ok) return;
+      setSelectedIds([]);
+      await loadApplications();
+      await loadReminders();
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function runBulkStatus() {
+    if (!selectedIds.length) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch("/api/tracker/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds, action: "status", status: bulkStatus }),
+      });
+      if (!res.ok) return;
+      setSelectedIds([]);
+      await loadApplications();
+      await loadReminders();
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  const calendarEvents = filteredApplications.flatMap((app) => {
+    const events: Array<{ date: string; label: string; appId: string; color: string }> = [];
+    if (app.interviewDate) {
+      events.push({
+        date: app.interviewDate.split("T")[0],
+        label: `Interview · ${app.company} (${app.position})`,
+        appId: app.id,
+        color: "text-purple-700 bg-purple-50 border-purple-200",
+      });
+    }
+    if (app.followUpDate) {
+      events.push({
+        date: app.followUpDate.split("T")[0],
+        label: `Follow-up · ${app.company} (${app.position})`,
+        appId: app.id,
+        color: "text-blue-700 bg-blue-50 border-blue-200",
+      });
+    }
+    return events;
+  });
+
+  const groupedCalendar = calendarEvents.reduce<Record<string, typeof calendarEvents>>((acc, event) => {
+    if (!acc[event.date]) acc[event.date] = [];
+    acc[event.date].push(event);
+    return acc;
+  }, {});
+
+  async function downloadCalendarIcs() {
+    setDownloadingCalendar(true);
+    try {
+      const res = await fetch('/api/tracker/calendar', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to export calendar');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resumeai-tracker.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    } finally {
+      setDownloadingCalendar(false);
     }
   }
 
@@ -359,6 +498,64 @@ export default function TrackerPage() {
           </button>
         </div>
 
+        {/* Reminders */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="inline-flex items-center text-gray-900 font-semibold">
+              <Bell className="h-4 w-4 mr-2 text-amber-500" />
+              Notifications & Reminders
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadCalendarIcs}
+                disabled={downloadingCalendar}
+                className="px-3 py-1.5 rounded-lg text-sm border bg-white text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-60"
+              >
+                {downloadingCalendar ? 'Exporting...' : 'Download .ics'}
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`px-3 py-1.5 rounded-lg text-sm border ${
+                  viewMode === "list" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`px-3 py-1.5 rounded-lg text-sm border ${
+                  viewMode === "calendar" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 border-gray-300"
+                }`}
+              >
+                Calendar
+              </button>
+            </div>
+          </div>
+          {remindersLoading ? (
+            <p className="text-sm text-gray-500">Loading reminders...</p>
+          ) : reminders.length === 0 ? (
+            <p className="text-sm text-gray-500">No reminders in the next 14 days.</p>
+          ) : (
+            <div className="space-y-2">
+              {reminders.slice(0, 6).map((reminder) => (
+                <div
+                  key={reminder.id}
+                  className={`border rounded-lg px-3 py-2 text-sm ${
+                    reminder.urgency === "overdue"
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : reminder.urgency === "today"
+                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                      : "border-blue-200 bg-blue-50 text-blue-700"
+                  }`}
+                >
+                  {reminder.type === "interview" ? "Interview" : "Follow-up"}: {reminder.company} ({reminder.position}) ·{" "}
+                  {formatDate(reminder.dueDate)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -412,8 +609,93 @@ export default function TrackerPage() {
         </div>
 
         {/* Applications List */}
-        <div className="space-y-4">
-          {filteredApplications.length === 0 ? (
+        {selectedIds.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4 flex flex-wrap items-center gap-3">
+            <span className="text-sm text-gray-700 font-medium">{selectedIds.length} selected</span>
+            <select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="applied">Applied</option>
+              <option value="phone_screen">Phone Screen</option>
+              <option value="interview">Interview</option>
+              <option value="offer">Offer</option>
+              <option value="rejected">Rejected</option>
+              <option value="withdrawn">Withdrawn</option>
+            </select>
+            <button
+              onClick={runBulkStatus}
+              disabled={bulkLoading}
+              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60"
+            >
+              Apply Status
+            </button>
+            <button
+              onClick={runBulkDelete}
+              disabled={bulkLoading}
+              className="px-3 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 disabled:opacity-60"
+            >
+              Delete Selected
+            </button>
+            <button
+              onClick={() => setSelectedIds([])}
+              className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {viewMode === "calendar" ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Calendar View</h3>
+            {Object.keys(groupedCalendar).length === 0 ? (
+              <p className="text-sm text-gray-600">No interview/follow-up events for the current filters.</p>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(groupedCalendar)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([date, events]) => (
+                    <div key={date}>
+                      <p className="text-sm font-semibold text-gray-900 mb-2">{formatDate(date)}</p>
+                      <div className="space-y-2">
+                        {events.map((event) => (
+                          <button
+                            key={`${event.appId}-${event.label}`}
+                            onClick={() => {
+                              setExpandedId(event.appId);
+                              setViewMode("list");
+                            }}
+                            className={`w-full text-left border rounded-lg px-3 py-2 text-sm ${event.color}`}
+                          >
+                            {event.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredApplications.length > 0 && (
+              <div className="flex items-center justify-between px-1">
+                <label className="inline-flex items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAllFiltered}
+                    className="mr-2"
+                  />
+                  Select all filtered
+                </label>
+                <span className="text-xs text-gray-500">{filteredApplications.length} items</span>
+              </div>
+            )}
+
+            {filteredApplications.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No applications found</h3>
@@ -441,6 +723,11 @@ export default function TrackerPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(app.id)}
+                            onChange={() => toggleSelected(app.id)}
+                          />
                           <h3 className="text-lg font-semibold text-gray-900">{app.position}</h3>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig[app.status].color}`}>
                             {statusConfig[app.status].label}
@@ -587,8 +874,9 @@ export default function TrackerPage() {
                 </div>
               );
             })
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Add/Edit Modal */}

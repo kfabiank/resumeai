@@ -236,6 +236,9 @@ export default function ResumeEditorPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isPublicResume, setIsPublicResume] = useState(false);
   const [isScanningAts, setIsScanningAts] = useState(false);
   const [atsResult, setAtsResult] = useState<AtsScanResult | null>(null);
   const exportPreviewRef = useRef<HTMLDivElement | null>(null);
@@ -263,6 +266,12 @@ export default function ResumeEditorPage() {
         setSelectedTemplateId(data.templateId || "modern-professional");
         setUserPlan(data.user?.planType || "free");
         setAtsResult(runAtsScan(data.content));
+
+        const shareRes = await fetch(`/api/resume/${id}/share`, { cache: "no-store" });
+        if (shareRes.ok) {
+          const shareBody = await shareRes.json();
+          setIsPublicResume(!!shareBody.isPublic);
+        }
       } catch (error: any) {
         console.error("Failed to load resume:", error);
         setLoadError(error?.message || "Could not load this resume");
@@ -493,6 +502,74 @@ export default function ResumeEditorPage() {
     }
   };
 
+  const handleExportDOCX = async () => {
+    if (!resume) return;
+    setIsExportingDocx(true);
+    try {
+      const res = await fetch(`/api/resume/${id}/export-docx`, {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to export DOCX");
+      }
+
+      const blob = await res.blob();
+      const fileName = `${resume.title || "resume"}`
+        .replace(/[^a-zA-Z0-9-_ ]/g, "")
+        .trim() || "resume";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${fileName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      alert(error?.message || "Failed to export DOCX");
+    } finally {
+      setIsExportingDocx(false);
+    }
+  };
+
+  const handleShareResume = async () => {
+    setIsSharing(true);
+    try {
+      let shareData: { isPublic: boolean; shareUrl: string } | null = null;
+      const current = await fetch(`/api/resume/${id}/share`, { cache: "no-store" });
+      if (current.ok) {
+        shareData = await current.json();
+      }
+
+      if (!shareData?.isPublic) {
+        const publishRes = await fetch(`/api/resume/${id}/share`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isPublic: true }),
+        });
+        const publishBody = await publishRes.json();
+        if (!publishRes.ok) {
+          throw new Error(publishBody.error || "Failed to publish resume");
+        }
+        shareData = publishBody;
+      }
+
+      setIsPublicResume(true);
+      if (shareData?.shareUrl) {
+        await navigator.clipboard.writeText(shareData.shareUrl);
+        alert("Share link copied to clipboard.");
+      } else {
+        alert("Resume shared.");
+      }
+    } catch (error: any) {
+      alert(error?.message || "Failed to share resume");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const addSkill = (type: "technical" | "soft") => {
     if (!content) return;
     const inputValue = type === "technical" ? technicalSkillInput : softSkillInput;
@@ -618,9 +695,13 @@ export default function ResumeEditorPage() {
                 {isSaving ? "Saving..." : "Save"}
               </button>
 
-              <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition inline-flex items-center text-sm font-medium">
+              <button
+                onClick={handleShareResume}
+                disabled={isSharing}
+                className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition inline-flex items-center text-sm font-medium disabled:opacity-50"
+              >
                 <Share2 className="mr-2 h-4 w-4" />
-                Share
+                {isSharing ? "Sharing..." : isPublicResume ? "Copy Share Link" : "Share"}
               </button>
 
               <button
@@ -631,12 +712,28 @@ export default function ResumeEditorPage() {
                 <Download className="mr-2 h-4 w-4" />
                 {isExporting ? "Exporting..." : "Export PDF"}
               </button>
+              <button
+                onClick={handleExportDOCX}
+                disabled={isExportingDocx}
+                className="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition inline-flex items-center text-sm font-medium disabled:opacity-50"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {isExportingDocx ? "Exporting..." : "Export DOCX"}
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-4">
+          <Link
+            href="/cover-letter"
+            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
+          >
+            Generate Cover Letter
+          </Link>
+        </div>
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">

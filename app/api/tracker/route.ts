@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { PLAN_FEATURES } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,29 @@ export async function POST(request: NextRequest) {
   const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers });
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { planType: true },
+  });
+  if (!currentUser) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404, headers });
+  }
+
+  const jobTrackerLimit =
+    PLAN_FEATURES[currentUser.planType as keyof typeof PLAN_FEATURES]?.jobTrackerLimit ?? 10;
+  if (jobTrackerLimit !== -1) {
+    const total = await prisma.jobApplication.count({ where: { userId } });
+    if (total >= jobTrackerLimit) {
+      return NextResponse.json(
+        {
+          error: `Free plan limit reached (${jobTrackerLimit} applications). Upgrade to add more.`,
+          code: 'TRACKER_LIMIT_REACHED',
+        },
+        { status: 403, headers }
+      );
+    }
   }
 
   const body = await request.json();

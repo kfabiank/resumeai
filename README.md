@@ -677,6 +677,21 @@ Checklist:
 4. Verifica `NEXT_PUBLIC_APP_URL` con tu dominio real
 5. Asegúrate que `QA_TEST_PASSWORD` NO esté configurado en producción (la lógica ya limita por `NODE_ENV`)
 
+### Nota para Vercel + Prisma
+
+Si Vercel muestra error de Prisma Client desactualizado, esta app ya ejecuta:
+- `postinstall`: `prisma generate`
+- `prebuild`: `prisma generate`
+
+Opcionalmente, puedes fijar en Vercel el Build Command como:
+```bash
+npm run build
+```
+o explícito:
+```bash
+prisma generate && npm run build
+```
+
 ## Seguridad
 
 - No subas `.env` a git

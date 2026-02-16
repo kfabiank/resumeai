@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -16,7 +17,8 @@
     "db:seed:synthetic": "node scripts/seed-synthetic-data.cjs",
     "db:reset:synthetic": "node scripts/reset-synthetic-data.cjs",
     "templates:import": "node scripts/import-templates.cjs",
-    "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook"
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

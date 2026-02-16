@@ -35,6 +35,34 @@ App local: [http://localhost:3000](http://localhost:3000)
 
 ---
 
+## SEO + Google Analytics
+
+La app ya incluye:
+- Metadata SEO global (title template, canonical, OpenGraph, Twitter, robots)
+- Schema.org (`Organization` + `WebSite`)
+- `robots.txt` dinámico (`/robots.txt`)
+- `sitemap.xml` dinámico (`/sitemap.xml`)
+- Google Analytics 4 (`gtag`) si defines `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+
+Variables requeridas en `.env`:
+
+```bash
+NEXT_PUBLIC_APP_URL="https://tu-dominio.com"
+NEXT_PUBLIC_SITE_URL="https://tu-dominio.com"
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
+GOOGLE_SITE_VERIFICATION="tu-token-search-console"
+BING_SITE_VERIFICATION=""
+```
+
+Pasos recomendados para posicionamiento:
+1. En producción, usar dominio real en `NEXT_PUBLIC_SITE_URL`.
+2. Verificar dominio en Google Search Console con `GOOGLE_SITE_VERIFICATION`.
+3. Enviar sitemap: `https://tu-dominio.com/sitemap.xml`.
+4. Verificar indexación de `https://tu-dominio.com/robots.txt`.
+5. Revisar Core Web Vitals y coverage en Search Console semanalmente.
+
+---
+
 ## Lógica de Negocio
 
 ### 1. Autenticación y Autorización

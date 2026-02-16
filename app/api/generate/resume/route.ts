@@ -7,7 +7,7 @@ import {
   getTemplateById,
   isTemplateId,
 } from '@/lib/template-catalog';
-import { PLAN_LIMITS } from '@/lib/stripe';
+import { PLAN_LIMITS, PLAN_FEATURES } from '@/lib/stripe';
 import { ensureTemplateExists } from '@/lib/template-db';
 
 export async function POST(request: NextRequest) {
@@ -49,6 +49,16 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check premium template access
+    const canUsePremiumTemplates =
+      PLAN_FEATURES[user.planType as keyof typeof PLAN_FEATURES]?.premiumTemplates ?? false;
+    if (selectedTemplate.isPremium && !canUsePremiumTemplates) {
+      return NextResponse.json(
+        { error: 'Upgrade required to use premium templates' },
+        { status: 403 }
+      );
     }
 
     // Check monthly limits

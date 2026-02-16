@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Check, Lock, Eye, Star } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { Check, Lock, Eye, Star } from "lucide-react";
+import AppTopNav from "@/components/AppTopNav";
 import {
   isTemplateId,
   TEMPLATE_CATALOG,
@@ -160,48 +160,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100">
-      {/* Navigation */}
-      <nav className="border-b border-white/10 bg-slate-900/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-lg shadow-lg shadow-blue-900/40">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-slate-300 hover:text-white">
-                Dashboard
-              </Link>
-              <Link href="/templates" className="text-cyan-300 font-medium">
-                Templates
-              </Link>
-              <Link href="/tracker" className="text-slate-300 hover:text-white">
-                Tracker
-              </Link>
-              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-white">{user.name}</p>
-                  <p className="text-xs text-slate-300 capitalize">{user.planType} Plan</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-sm text-slate-300 hover:text-red-300"
-              >
-                Log out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppTopNav active="templates" userName={user.name} planType={user.planType} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

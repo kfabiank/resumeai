@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { FileText, Loader2, Save } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
+import AppTopNav from '@/components/AppTopNav';
 
 type ProfileData = {
   name: string;
@@ -122,23 +122,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </Link>
-            <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-700">
-              Back to dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <AppTopNav
+        active="profile"
+        userName={form.name || form.email?.split('@')[0] || 'User'}
+        planType={form.planType || 'free'}
+      />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>

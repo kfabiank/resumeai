@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureTemplateExists } from "@/lib/template-db";
 import { getTemplateById, isTemplateId } from "@/lib/template-catalog";
 import { parseDocxTextToResumeContent } from "@/lib/docx-import";
+import { PLAN_LIMITS } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,33 @@ export async function POST(request: Request) {
   if (template.isPremium && user.planType === "free") {
     return NextResponse.json(
       { error: "Upgrade required to use premium templates" },
+      { status: 403 }
+    );
+  }
+
+  // Check monthly resume limit
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const resumesThisMonth = await prisma.resume.count({
+    where: {
+      userId,
+      createdAt: { gte: startOfMonth },
+    },
+  });
+
+  const planLimit =
+    PLAN_LIMITS[user.planType as keyof typeof PLAN_LIMITS]?.resumesPerMonth ?? 3;
+
+  if (planLimit !== -1 && resumesThisMonth >= planLimit) {
+    return NextResponse.json(
+      {
+        error: "Monthly resume limit reached",
+        message: "Upgrade your plan to import more resumes",
+        resumesUsed: resumesThisMonth,
+        resumesLimit: planLimit,
+      },
       { status: 403 }
     );
   }

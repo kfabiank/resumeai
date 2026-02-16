@@ -3,6 +3,9 @@ import Link from "next/link";
 export const metadata = {
   title: "Terms of Service | ResumeAI",
   description: "Terms of Service for ResumeAI.",
+  alternates: {
+    canonical: "/terms",
+  },
 };
 
 export default function TermsPage() {

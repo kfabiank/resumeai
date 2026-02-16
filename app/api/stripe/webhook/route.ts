@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
               data: {
                 subscriptionStatus: subscription.status,
                 currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-                planType: subscription.metadata?.plan || inferredPlan || 'pro',
+                planType: subscription.metadata?.plan || inferredPlan || 'free',
               },
             });
           }

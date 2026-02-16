@@ -3,6 +3,9 @@ import Link from "next/link";
 export const metadata = {
   title: "Privacy Policy | ResumeAI",
   description: "Privacy Policy for ResumeAI.",
+  alternates: {
+    canonical: "/privacy",
+  },
 };
 
 export default function PrivacyPage() {

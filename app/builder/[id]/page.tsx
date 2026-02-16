@@ -816,23 +816,166 @@ export default function ResumeEditorPage() {
                   highlightExperience ? "border border-amber-400 bg-amber-50/30" : ""
                 }`}
               >
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Experience</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-gray-900">Experience</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContent({
+                        ...content,
+                        experiences: [
+                          ...content.experiences,
+                          {
+                            title: "",
+                            company: "",
+                            location: "",
+                            startDate: "",
+                            endDate: "",
+                            current: false,
+                            optimizedBullets: [""],
+                            keywordsUsed: [],
+                          },
+                        ],
+                      });
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + Add Experience
+                  </button>
+                </div>
                 {content.experiences.map((exp, expIndex) => (
                   <div key={expIndex} className="mb-4 pb-4 border-b last:border-0">
-                    <div className="font-medium text-gray-900 mb-2">{exp.title} at {exp.company}</div>
-                    <div className="space-y-2">
-                      {exp.optimizedBullets.map((bullet, bulletIndex) => (
-                        <textarea
-                          key={bulletIndex}
-                          value={bullet}
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs text-gray-500 font-medium">Role {expIndex + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newExperiences = content.experiences.filter((_, i) => i !== expIndex);
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        className="text-xs text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <input
+                        value={exp.title}
+                        onChange={(e) => {
+                          const newExperiences = [...content.experiences];
+                          newExperiences[expIndex] = { ...newExperiences[expIndex], title: e.target.value };
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        placeholder="Job Title"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      />
+                      <input
+                        value={exp.company}
+                        onChange={(e) => {
+                          const newExperiences = [...content.experiences];
+                          newExperiences[expIndex] = { ...newExperiences[expIndex], company: e.target.value };
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        placeholder="Company"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <input
+                        value={exp.location || ""}
+                        onChange={(e) => {
+                          const newExperiences = [...content.experiences];
+                          newExperiences[expIndex] = { ...newExperiences[expIndex], location: e.target.value };
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        placeholder="Location"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <input
+                        value={exp.startDate}
+                        onChange={(e) => {
+                          const newExperiences = [...content.experiences];
+                          newExperiences[expIndex] = { ...newExperiences[expIndex], startDate: e.target.value };
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        placeholder="Start Date"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      />
+                      <input
+                        value={exp.current ? "Present" : (exp.endDate || "")}
+                        onChange={(e) => {
+                          const newExperiences = [...content.experiences];
+                          newExperiences[expIndex] = { ...newExperiences[expIndex], endDate: e.target.value, current: false };
+                          setContent({ ...content, experiences: newExperiences });
+                        }}
+                        placeholder="End Date"
+                        disabled={exp.current}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent disabled:bg-gray-100"
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-gray-600">
+                        <input
+                          type="checkbox"
+                          checked={exp.current}
                           onChange={(e) => {
                             const newExperiences = [...content.experiences];
-                            newExperiences[expIndex].optimizedBullets[bulletIndex] = e.target.value;
+                            newExperiences[expIndex] = { ...newExperiences[expIndex], current: e.target.checked, endDate: e.target.checked ? "" : newExperiences[expIndex].endDate };
                             setContent({ ...content, experiences: newExperiences });
                           }}
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                          className="rounded"
                         />
+                        Currently working here
+                      </label>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Bullets</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newExperiences = [...content.experiences];
+                            newExperiences[expIndex] = {
+                              ...newExperiences[expIndex],
+                              optimizedBullets: [...newExperiences[expIndex].optimizedBullets, ""],
+                            };
+                            setContent({ ...content, experiences: newExperiences });
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          + Add Bullet
+                        </button>
+                      </div>
+                      {exp.optimizedBullets.map((bullet, bulletIndex) => (
+                        <div key={bulletIndex} className="flex gap-1">
+                          <textarea
+                            value={bullet}
+                            onChange={(e) => {
+                              const newExperiences = [...content.experiences];
+                              newExperiences[expIndex].optimizedBullets[bulletIndex] = e.target.value;
+                              setContent({ ...content, experiences: newExperiences });
+                            }}
+                            rows={2}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newExperiences = [...content.experiences];
+                              newExperiences[expIndex] = {
+                                ...newExperiences[expIndex],
+                                optimizedBullets: newExperiences[expIndex].optimizedBullets.filter((_, i) => i !== bulletIndex),
+                              };
+                              setContent({ ...content, experiences: newExperiences });
+                            }}
+                            className="text-gray-400 hover:text-red-500 self-start mt-2"
+                            aria-label="Remove bullet"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>

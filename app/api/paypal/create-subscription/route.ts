@@ -8,6 +8,9 @@ import {
 } from '@paypal/paypal-server-sdk';
 import { getAuthSession } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();

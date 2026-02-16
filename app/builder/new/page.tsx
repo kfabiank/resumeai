@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, FileText, Briefcase, GraduationCap, Code, CheckCircle, Sparkles, Loader2 } from "lucide-react";
@@ -27,6 +27,14 @@ interface Education {
 }
 
 export default function ResumeBuilderPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>}>
+      <ResumeBuilderContent />
+    </Suspense>
+  );
+}
+
+function ResumeBuilderContent() {
   const searchParams = useSearchParams();
   const requestedTemplate = searchParams.get("template") || DEFAULT_TEMPLATE_ID;
   const selectedTemplateId = isTemplateId(requestedTemplate)

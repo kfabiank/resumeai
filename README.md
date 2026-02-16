@@ -535,6 +535,27 @@ SYNTHETIC_TAG="SYNTH"
 5. En `/login` usa **Continue with LinkedIn**.
 6. Luego en `/profile` usa **Import from LinkedIn** para traer datos básicos (name, email, image y linkedinUrl si viene en provider response).
 
+### Resume Import from Word (.docx)
+
+- En `/builder/new` ahora tienes dos caminos:
+  - **Upload your Word resume** (`.docx`)
+  - **Create from scratch**
+- Al subir `.docx`, la app parsea el contenido y crea un resume nuevo usando el template seleccionado.
+- Te redirige automáticamente a `/builder/[id]` para editar y cambiar template si quieres.
+
+### LinkedIn Data Export (CSV) para Experience/Education/Skills
+
+El login OAuth de LinkedIn normalmente solo entrega datos básicos.  
+Para importar experiencia, educación y skills:
+
+1. Desde LinkedIn, descarga tu export de datos (CSV).
+2. En `/builder/new` -> Step 2, usa **Import LinkedIn CSV**.
+3. Sube archivos como:
+   - `Positions.csv` (experience)
+   - `Education.csv` (education)
+   - `Skills.csv` (skills)
+4. Puedes subirlos uno por uno; cada upload actualiza `user_profile` y precarga el wizard.
+
 ---
 
 ## Comandos

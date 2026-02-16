@@ -1,9 +1,21 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, Briefcase, GraduationCap, Code, CheckCircle, Sparkles, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  FileText,
+  Briefcase,
+  GraduationCap,
+  Code,
+  CheckCircle,
+  Sparkles,
+  Loader2,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import { DEFAULT_TEMPLATE_ID, getTemplateById, isTemplateId } from "@/lib/template-catalog";
 
 interface Experience {
@@ -26,6 +38,39 @@ interface Education {
   gpa?: string;
 }
 
+type ProfileResponse = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  headline?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
+  experiences?: Array<{
+    title?: string;
+    company?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    current?: boolean;
+    description?: string;
+    optimizedBullets?: string[];
+  }>;
+  education?: Array<{
+    degree?: string;
+    institution?: string;
+    location?: string;
+    graduationDate?: string;
+    gpa?: string;
+  }>;
+  skills?:
+    | string[]
+    | {
+        technical?: string[];
+        soft?: string[];
+      };
+};
+
 export default function ResumeBuilderPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>}>
@@ -43,7 +88,9 @@ function ResumeBuilderContent() {
   const selectedTemplate = getTemplateById(selectedTemplateId);
 
   const [step, setStep] = useState(1);
+  const [showStartChooser, setShowStartChooser] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
   
   // Form data
   const [jobDescription, setJobDescription] = useState("");
@@ -85,6 +132,145 @@ function ResumeBuilderContent() {
 
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  const [isImportingProfile, setIsImportingProfile] = useState(false);
+  const [isImportingResumeDocx, setIsImportingResumeDocx] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
+  const [importError, setImportError] = useState("");
+
+  const applyProfileToPersonalInfo = (data: ProfileResponse) => {
+    setPersonalInfo((prev) => ({
+      ...prev,
+      name: data.name || prev.name,
+      email: data.email || prev.email,
+      phone: data.phone || prev.phone,
+      location: data.location || prev.location,
+      linkedin: data.linkedinUrl || prev.linkedin,
+      portfolio: data.portfolioUrl || prev.portfolio,
+      headline: data.headline || prev.headline,
+    }));
+  };
+
+  const applyProfileCollections = (data: ProfileResponse) => {
+    const mappedExperiences = Array.isArray(data.experiences)
+      ? data.experiences
+          .map((exp, index) => ({
+            id: `profile-exp-${index}-${Date.now()}`,
+            title: exp.title || "",
+            company: exp.company || "",
+            location: exp.location || "",
+            startDate: exp.startDate || "",
+            endDate: exp.endDate || "",
+            current: Boolean(exp.current),
+            description:
+              exp.description ||
+              (Array.isArray(exp.optimizedBullets) ? exp.optimizedBullets.join("\n") : ""),
+          }))
+          .filter((exp) => exp.title || exp.company || exp.description)
+      : [];
+
+    if (mappedExperiences.length > 0) {
+      setExperiences(mappedExperiences);
+    }
+
+    const mappedEducation = Array.isArray(data.education)
+      ? data.education
+          .map((edu, index) => ({
+            id: `profile-edu-${index}-${Date.now()}`,
+            degree: edu.degree || "",
+            institution: edu.institution || "",
+            location: edu.location || "",
+            graduationDate: edu.graduationDate || "",
+            gpa: edu.gpa || "",
+          }))
+          .filter((edu) => edu.degree || edu.institution)
+      : [];
+
+    if (mappedEducation.length > 0) {
+      setEducation(mappedEducation);
+    }
+
+    let importedSkills: string[] = [];
+    if (Array.isArray(data.skills)) {
+      importedSkills = data.skills.filter((value): value is string => typeof value === "string");
+    } else if (data.skills && typeof data.skills === "object") {
+      const technical = Array.isArray(data.skills.technical) ? data.skills.technical : [];
+      const soft = Array.isArray(data.skills.soft) ? data.skills.soft : [];
+      importedSkills = [...technical, ...soft];
+    }
+
+    if (importedSkills.length > 0) {
+      setSkills(Array.from(new Set(importedSkills.map((skill) => skill.trim()).filter(Boolean))));
+    }
+  };
+
+  const loadSavedProfile = async (options?: { includeCollections?: boolean }) => {
+    const profileResponse = await fetch("/api/profile", { cache: "no-store" });
+    if (!profileResponse.ok) {
+      throw new Error("Could not load saved profile");
+    }
+    const profile = (await profileResponse.json()) as ProfileResponse;
+    applyProfileToPersonalInfo(profile);
+    if (options?.includeCollections) {
+      applyProfileCollections(profile);
+    }
+    return profile;
+  };
+
+  const handleUseSavedProfile = async () => {
+    setImportError("");
+    setImportMessage("");
+    setIsImportingProfile(true);
+    try {
+      await loadSavedProfile();
+      setImportMessage("Saved profile loaded into the form.");
+    } catch (error: any) {
+      setImportError(error.message || "Could not load saved profile");
+    } finally {
+      setIsImportingProfile(false);
+    }
+  };
+
+  const startBlank = () => {
+    setShowStartChooser(false);
+    setStep(1);
+  };
+
+  const handleImportResumeDocx = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportError("");
+    setImportMessage("");
+    setIsImportingResumeDocx(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("templateId", selectedTemplateId);
+
+      const res = await fetch("/api/resume/import-docx", {
+        method: "POST",
+        body: formData,
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error || "Could not import Word resume");
+      }
+
+      if (body.resumeId) {
+        window.location.href = `/builder/${body.resumeId}`;
+        return;
+      }
+      throw new Error("Resume import did not return a resume id");
+    } catch (error: any) {
+      setImportError(error.message || "Could not import Word resume");
+    } finally {
+      setIsImportingResumeDocx(false);
+      e.target.value = "";
+    }
+  };
 
   const addExperience = () => {
     setExperiences([
@@ -193,6 +379,79 @@ function ResumeBuilderContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showStartChooser && (
+        <div className="fixed inset-0 z-40 bg-white/95 backdrop-blur-sm px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold text-slate-800">
+                  How would you like to start your resume?
+                </h1>
+                <p className="text-slate-600 mt-2">
+                  Pick a fast path and we will prefill as much as possible.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={startBlank}
+                className="p-2 text-slate-500 hover:text-slate-800"
+                aria-label="Close start options"
+              >
+                <X className="h-8 w-8" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <button
+                type="button"
+                onClick={() => csvInputRef.current?.click()}
+                className="group rounded-2xl border border-slate-200 bg-white p-8 text-left hover:shadow-lg transition"
+              >
+                <UploadCloud className="h-10 w-10 text-violet-500 mb-6" />
+                <p className="text-4xl font-bold text-slate-600 mb-2">01</p>
+                <h3 className="text-3xl font-extrabold text-slate-700 leading-tight">
+                  Upload your Word resume
+                </h3>
+                <p className="text-sm text-slate-500 mt-3">
+                  Supported format: .docx
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={startBlank}
+                className="group rounded-2xl border border-slate-200 bg-white p-8 text-left hover:shadow-lg transition"
+              >
+                <FileText className="h-10 w-10 text-blue-500 mb-6" />
+                <p className="text-4xl font-bold text-slate-600 mb-2">02</p>
+                <h3 className="text-3xl font-extrabold text-slate-700 leading-tight">
+                  Create from scratch
+                </h3>
+                <p className="text-sm text-slate-500 mt-3">
+                  Fill all sections manually
+                </p>
+              </button>
+            </div>
+
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleImportResumeDocx}
+              className="hidden"
+              disabled={isImportingResumeDocx}
+            />
+
+            {isImportingResumeDocx && (
+              <p className="mt-5 text-sm text-slate-600">Importing Word resume...</p>
+            )}
+            {importError && (
+              <p className="mt-3 text-sm text-red-700">{importError}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -336,6 +595,34 @@ function ResumeBuilderContent() {
                 <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
                 <p className="text-gray-600">Tell us about yourself</p>
               </div>
+            </div>
+
+            <div className="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleUseSavedProfile}
+                  disabled={isImportingProfile}
+                  className="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 font-medium hover:bg-blue-100 disabled:opacity-60"
+                >
+                  Use Saved Profile
+                </button>
+                <label className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 cursor-pointer">
+                  {isImportingResumeDocx ? "Importing .docx..." : "Import Word Resume (.docx)"}
+                  <input
+                    type="file"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleImportResumeDocx}
+                    className="hidden"
+                    disabled={isImportingResumeDocx}
+                  />
+                </label>
+              </div>
+              <p className="mt-2 text-xs text-blue-900">
+                Upload a .docx resume to create a new resume prefilled in your selected template.
+              </p>
+              {importMessage ? <p className="mt-2 text-sm text-green-700">{importMessage}</p> : null}
+              {importError ? <p className="mt-2 text-sm text-red-700">{importError}</p> : null}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

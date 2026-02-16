@@ -43,6 +43,9 @@ export async function GET() {
     linkedinUrl: user.profile?.linkedinUrl || '',
     portfolioUrl: user.profile?.portfolioUrl || '',
     githubUrl: user.profile?.githubUrl || '',
+    experiences: Array.isArray(user.profile?.experiences) ? user.profile?.experiences : [],
+    education: Array.isArray(user.profile?.education) ? user.profile?.education : [],
+    skills: Array.isArray(user.profile?.skills) ? user.profile?.skills : [],
   }, { headers: noStoreHeaders });
 }
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ResumeAI logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#g)"/>
+  <rect x="132" y="96" width="248" height="320" rx="24" fill="#ffffff"/>
+  <rect x="172" y="150" width="168" height="16" rx="8" fill="#2563eb"/>
+  <rect x="172" y="188" width="168" height="16" rx="8" fill="#93c5fd"/>
+  <rect x="172" y="226" width="132" height="16" rx="8" fill="#93c5fd"/>
+  <circle cx="248" cy="320" r="54" fill="#2563eb"/>
+  <path d="M229 343v-45h-13v-18h13v-11c0-18 11-29 28-29 8 0 15 1 17 1v17h-12c-9 0-11 4-11 10v12h22l-3 18h-19v45z" fill="#fff"/>
+</svg>

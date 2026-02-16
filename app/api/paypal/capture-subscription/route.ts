@@ -30,12 +30,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const subscriptionsController = new SubscriptionsController(paypalClient);
+    const subscriptionsController = new SubscriptionsController(paypalClient) as any;
 
     // Get subscription details
-    const { result: subscription } = await subscriptionsController.getSubscription({
-      id: subscriptionId,
-    });
+    const subscriptionResponse =
+      typeof subscriptionsController.getSubscription === 'function'
+        ? await subscriptionsController.getSubscription({
+            id: subscriptionId,
+          })
+        : await subscriptionsController.subscriptionsGet({
+            subscriptionId,
+          });
+
+    const subscription =
+      subscriptionResponse?.result ||
+      subscriptionResponse?.body ||
+      subscriptionResponse;
 
     const subscriptionStatus = (subscription as any)?.status as string | undefined;
 

@@ -19,6 +19,17 @@ function GoogleMark() {
   );
 }
 
+function LinkedInMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <path
+        fill="#0A66C2"
+        d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.03-1.85-3.03-1.85 0-2.13 1.45-2.13 2.94v5.66H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.27 2.38 4.27 5.47v6.27zM5.34 7.43c-1.14 0-2.07-.93-2.07-2.08 0-1.14.93-2.07 2.07-2.07 1.15 0 2.08.93 2.08 2.07 0 1.15-.93 2.08-2.08 2.08zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"
+      />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const [providers, setProviders] = useState<ProviderMap | null>(null);
@@ -33,14 +44,15 @@ export default function LoginPage() {
   }, []);
 
   const hasGoogle = providers ? !!providers.google : true;
+  const hasLinkedIn = providers ? !!providers.linkedin : true;
   const hasEmail = !!providers?.email;
   const oauthError = searchParams.get('error');
 
   useEffect(() => {
     if (!oauthError) return;
     const errorMap: Record<string, string> = {
-      OAuthSignin: 'Google sign-in could not be started.',
-      OAuthCallback: 'Google callback failed. Check OAuth redirect URL in Google Console.',
+      OAuthSignin: 'Social sign-in could not be started.',
+      OAuthCallback: 'OAuth callback failed. Check redirect URL in provider console.',
       OAuthCreateAccount: 'Could not create account from Google profile.',
       Callback: 'Authentication callback failed.',
       AccessDenied: 'Access denied by provider.',
@@ -59,6 +71,17 @@ export default function LoginPage() {
 
     setLoading(true);
     await signIn('google', { callbackUrl: '/dashboard' });
+  }
+
+  async function handleLinkedIn() {
+    setAuthError('');
+    if (providers && !providers.linkedin) {
+      setAuthError('LinkedIn provider is not configured.');
+      return;
+    }
+
+    setLoading(true);
+    await signIn('linkedin', { callbackUrl: '/dashboard' });
   }
 
   async function handleEmail(e: React.FormEvent<HTMLFormElement>) {
@@ -110,16 +133,27 @@ export default function LoginPage() {
         <h1 className="text-center text-2xl font-bold text-gray-900">Welcome back</h1>
         <p className="mt-2 text-center text-gray-500">Sign in to continue building resumes</p>
 
-        {/* Google Button */}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={loading}
-          className="mt-8 flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
-        >
-          <GoogleMark />
-          Continue with Google
-        </button>
+        {/* OAuth Buttons */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={loading || !hasGoogle}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+          >
+            <GoogleMark />
+            Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={handleLinkedIn}
+            disabled={loading || !hasLinkedIn}
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+          >
+            <LinkedInMark />
+            Continue with LinkedIn
+          </button>
+        </div>
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
           <div className="h-px flex-1 bg-gray-200" />

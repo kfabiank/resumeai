@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FileText, Loader2, Save } from 'lucide-react';
 
@@ -34,28 +34,30 @@ export default function ProfilePage() {
   const [form, setForm] = useState<ProfileData>(EMPTY_PROFILE);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImportingLinkedIn, setIsImportingLinkedIn] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const res = await fetch('/api/profile', { cache: 'no-store' });
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        const data = await res.json();
-        setForm((prev) => ({ ...prev, ...data }));
-      } catch {
-        setError('Could not load profile');
-      } finally {
-        setIsLoading(false);
+  const loadProfile = useCallback(async (withLoading = false) => {
+    if (withLoading) setIsLoading(true);
+    try {
+      const res = await fetch('/api/profile', { cache: 'no-store' });
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
       }
-    };
-
-    void loadProfile();
+      const data = await res.json();
+      setForm((prev) => ({ ...prev, ...data }));
+    } catch {
+      setError('Could not load profile');
+    } finally {
+      if (withLoading) setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadProfile(true);
+  }, [loadProfile]);
 
   const onChange =
     (field: keyof ProfileData) =>
@@ -85,6 +87,28 @@ export default function ProfilePage() {
       setError('Failed to save profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const onImportLinkedIn = async () => {
+    setError('');
+    setMessage('');
+    setIsImportingLinkedIn(true);
+    try {
+      const res = await fetch('/api/profile/import-linkedin', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not import LinkedIn profile');
+        return;
+      }
+      await loadProfile();
+      setMessage('LinkedIn profile imported successfully');
+    } catch {
+      setError('Could not import LinkedIn profile');
+    } finally {
+      setIsImportingLinkedIn(false);
     }
   };
 
@@ -121,6 +145,27 @@ export default function ProfilePage() {
         <p className="text-gray-600 mb-8">
           Edit your personal details used across your resumes.
         </p>
+
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onImportLinkedIn}
+            disabled={isImportingLinkedIn}
+            className="inline-flex items-center rounded-lg border border-[#0A66C2] px-4 py-2 text-sm font-medium text-[#0A66C2] hover:bg-blue-50 disabled:opacity-60"
+          >
+            {isImportingLinkedIn ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Importing from LinkedIn...
+              </>
+            ) : (
+              'Import from LinkedIn'
+            )}
+          </button>
+          <p className="text-sm text-gray-500">
+            First sign in with LinkedIn at least once, then import your latest profile basics.
+          </p>
+        </div>
 
         <form onSubmit={onSave} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

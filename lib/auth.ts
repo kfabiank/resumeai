@@ -150,6 +150,11 @@ if (linkedinClientId && linkedinClientSecret) {
     LinkedInProvider({
       clientId: linkedinClientId,
       clientSecret: linkedinClientSecret,
+      authorization: {
+        params: {
+          scope: 'openid profile email',
+        },
+      },
     })
   );
 }
@@ -238,6 +243,40 @@ export const authOptions: NextAuthOptions = {
                 name: googleProfile.name || token.name as string,
                 email: googleProfile.email,
                 image: googleProfile.picture || null,
+              },
+            });
+            token.name = updated.name;
+            token.email = updated.email;
+            token.picture = updated.image;
+          } catch {
+            // User might not exist yet; PrismaAdapter will create it
+          }
+        }
+      }
+
+      if (account?.provider === 'linkedin' && profile) {
+        const linkedInProfile = profile as {
+          name?: string;
+          email?: string;
+          picture?: string;
+          given_name?: string;
+          family_name?: string;
+        };
+        const userId = (token.id as string) || tokenSub;
+        if (userId && linkedInProfile.email) {
+          try {
+            const resolvedName =
+              linkedInProfile.name ||
+              [linkedInProfile.given_name, linkedInProfile.family_name].filter(Boolean).join(' ') ||
+              token.name ||
+              null;
+
+            const updated = await prisma.user.update({
+              where: { id: userId },
+              data: {
+                name: resolvedName,
+                email: linkedInProfile.email,
+                image: linkedInProfile.picture || null,
               },
             });
             token.name = updated.name;

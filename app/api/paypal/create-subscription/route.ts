@@ -57,10 +57,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscriptionsController = new SubscriptionsController(paypalClient);
+    const subscriptionsController = new SubscriptionsController(paypalClient) as any;
 
     // Create subscription
-    const { result: subscription } = await subscriptionsController.createSubscription({
+    const createPayload = {
       body: {
         planId: planId,
         applicationContext: {
@@ -73,7 +73,17 @@ export async function POST(request: NextRequest) {
         },
         customId: JSON.stringify({ userId: currentUserId, plan, billingPeriod }),
       },
-    });
+    };
+
+    const createResponse =
+      typeof subscriptionsController.createSubscription === 'function'
+        ? await subscriptionsController.createSubscription(createPayload)
+        : await subscriptionsController.subscriptionsCreate(createPayload);
+
+    const subscription =
+      createResponse?.result ||
+      createResponse?.body ||
+      createResponse;
 
     // Find the approval link
     const approvalLink = subscription.links?.find(

@@ -523,6 +523,18 @@ SYNTHETIC_EMAIL_DOMAIN="synthetic.resumeai.local"
 SYNTHETIC_TAG="SYNTH"
 ```
 
+### LinkedIn OAuth Setup + Import
+
+1. En LinkedIn Developers crea una app y habilita **Sign In with LinkedIn using OpenID Connect**.
+2. Configura este redirect URL exacto:
+   - `http://localhost:3000/api/auth/callback/linkedin`
+3. Copia credenciales a `.env`:
+   - `LINKEDIN_CLIENT_ID`
+   - `LINKEDIN_CLIENT_SECRET`
+4. Reinicia `npm run dev`.
+5. En `/login` usa **Continue with LinkedIn**.
+6. Luego en `/profile` usa **Import from LinkedIn** para traer datos básicos (name, email, image y linkedinUrl si viene en provider response).
+
 ---
 
 ## Comandos

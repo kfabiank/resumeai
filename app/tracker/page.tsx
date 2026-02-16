@@ -8,6 +8,8 @@ import {
   Search,
   Filter,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Building2,
   MapPin,
   ExternalLink,
@@ -108,6 +110,31 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthStart(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function monthEnd(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function addMonths(date: Date, months: number) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
 export default function TrackerPage() {
   const [user, setUser] = useState<{ name: string; planType: string }>({ name: "User", planType: "free" });
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -116,6 +143,8 @@ export default function TrackerPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => monthStart(new Date()));
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(() => toLocalDateKey(new Date()));
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatus, setBulkStatus] = useState<string>("applied");
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -371,13 +400,24 @@ export default function TrackerPage() {
   }
 
   const calendarEvents = filteredApplications.flatMap((app) => {
-    const events: Array<{ date: string; label: string; appId: string; color: string }> = [];
+    const events: Array<{
+      date: string;
+      label: string;
+      appId: string;
+      company: string;
+      position: string;
+      color: string;
+      type: "interview" | "followup";
+    }> = [];
     if (app.interviewDate) {
       events.push({
         date: app.interviewDate.split("T")[0],
         label: `Interview · ${app.company} (${app.position})`,
         appId: app.id,
+        company: app.company,
+        position: app.position,
         color: "text-purple-700 bg-purple-50 border-purple-200",
+        type: "interview",
       });
     }
     if (app.followUpDate) {
@@ -385,7 +425,10 @@ export default function TrackerPage() {
         date: app.followUpDate.split("T")[0],
         label: `Follow-up · ${app.company} (${app.position})`,
         appId: app.id,
+        company: app.company,
+        position: app.position,
         color: "text-blue-700 bg-blue-50 border-blue-200",
+        type: "followup",
       });
     }
     return events;
@@ -396,6 +439,14 @@ export default function TrackerPage() {
     acc[event.date].push(event);
     return acc;
   }, {});
+
+  const currentMonthStart = monthStart(calendarMonth);
+  const currentMonthEnd = monthEnd(calendarMonth);
+  const firstWeekDay = currentMonthStart.getDay(); // 0 Sun ... 6 Sat
+  const calendarGridStart = addDays(currentMonthStart, -firstWeekDay);
+  const calendarDays = Array.from({ length: 42 }, (_, i) => addDays(calendarGridStart, i));
+  const selectedDayEvents = groupedCalendar[selectedCalendarDate] || [];
+  const todayKey = toLocalDateKey(new Date());
 
   async function downloadCalendarIcs() {
     setDownloadingCalendar(true);
@@ -649,34 +700,129 @@ export default function TrackerPage() {
 
         {viewMode === "calendar" ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Calendar View</h3>
-            {Object.keys(groupedCalendar).length === 0 ? (
-              <p className="text-sm text-gray-600">No interview/follow-up events for the current filters.</p>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(groupedCalendar)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([date, events]) => (
-                    <div key={date}>
-                      <p className="text-sm font-semibold text-gray-900 mb-2">{formatDate(date)}</p>
-                      <div className="space-y-2">
-                        {events.map((event) => (
-                          <button
-                            key={`${event.appId}-${event.label}`}
-                            onClick={() => {
-                              setExpandedId(event.appId);
-                              setViewMode("list");
-                            }}
-                            className={`w-full text-left border rounded-lg px-3 py-2 text-sm ${event.color}`}
-                          >
-                            {event.label}
-                          </button>
-                        ))}
-                      </div>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
+              <h3 className="text-lg font-semibold text-gray-900">Calendar View</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCalendarMonth((m) => addMonths(m, -1))}
+                  className="px-2.5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  aria-label="Previous month"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setCalendarMonth(monthStart(new Date()))}
+                  className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setCalendarMonth((m) => addMonths(m, 1))}
+                  className="px-2.5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  aria-label="Next month"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-xl font-semibold text-gray-900">
+                {currentMonthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </p>
+              <p className="text-sm text-gray-600">
+                {calendarEvents.length} event{calendarEvents.length === 1 ? "" : "s"} with current filters
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
+              <div>
+                <div className="grid grid-cols-7 gap-2 mb-2">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
+                    <div key={weekday} className="text-xs font-semibold text-gray-500 text-center py-1">
+                      {weekday}
                     </div>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarDays.map((date) => {
+                    const dateKey = toLocalDateKey(date);
+                    const isCurrentMonth =
+                      date >= currentMonthStart && date <= currentMonthEnd;
+                    const isSelected = dateKey === selectedCalendarDate;
+                    const isToday = dateKey === todayKey;
+                    const dayEvents = groupedCalendar[dateKey] || [];
+
+                    return (
+                      <button
+                        key={dateKey}
+                        onClick={() => setSelectedCalendarDate(dateKey)}
+                        className={`min-h-[108px] rounded-lg border p-2 text-left transition ${
+                          isSelected
+                            ? "border-blue-600 ring-1 ring-blue-600 bg-blue-50/40"
+                            : "border-gray-200 hover:border-blue-300"
+                        } ${!isCurrentMonth ? "bg-gray-50 text-gray-400" : "bg-white"}`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-semibold ${isToday ? "text-blue-700" : ""}`}>
+                            {date.getDate()}
+                          </span>
+                          {dayEvents.length > 0 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                              {dayEvents.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          {dayEvents.slice(0, 3).map((event) => (
+                            <div
+                              key={`${event.appId}-${event.type}`}
+                              className={`truncate rounded-md border px-1.5 py-1 text-[10px] ${event.color}`}
+                            >
+                              {event.type === "interview" ? "Interview" : "Follow-up"} · {event.company}
+                            </div>
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <p className="text-[10px] text-gray-500">+{dayEvents.length - 3} more</p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+
+              <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                <h4 className="font-semibold text-gray-900 mb-1">
+                  {formatDate(selectedCalendarDate)}
+                </h4>
+                <p className="text-xs text-gray-600 mb-4">
+                  {selectedDayEvents.length} event{selectedDayEvents.length === 1 ? "" : "s"}
+                </p>
+
+                {selectedDayEvents.length === 0 ? (
+                  <p className="text-sm text-gray-600">No events for this date.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedDayEvents.map((event) => (
+                      <button
+                        key={`${event.appId}-${event.type}-${event.label}`}
+                        onClick={() => {
+                          setExpandedId(event.appId);
+                          setViewMode("list");
+                        }}
+                        className={`w-full text-left border rounded-lg px-3 py-2 text-sm ${event.color}`}
+                      >
+                        <p className="font-semibold">{event.type === "interview" ? "Interview" : "Follow-up"}</p>
+                        <p className="truncate">{event.company}</p>
+                        <p className="truncate text-xs opacity-85">{event.label.replace(/^(Interview|Follow-up)\s·\s/, "")}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

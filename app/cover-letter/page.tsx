@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
-import { FileText, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import AppTopNav from "@/components/AppTopNav";
 
 type ResumeItem = {
   id: string;
@@ -109,19 +109,7 @@ export default function CoverLetterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-blue-600">ResumeAI</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-700">
-            Back to dashboard
-          </Link>
-        </div>
-      </nav>
+      <AppTopNav active="cover-letter" authMode="auto" />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">

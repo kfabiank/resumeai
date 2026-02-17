@@ -94,6 +94,30 @@ Pasos recomendados para posicionamiento:
 - `admin` — se computa en cada creación de JWT: `token.email === ROOT_ADMIN_EMAIL`. NO se almacena en DB.
 - `user` — todos los demás.
 
+#### Superusuario y panel `/admin`
+
+El acceso a `/admin` está ligado **solo** al email configurado como admin en `.env` (no depende del plan del usuario).
+
+Para habilitar acceso admin:
+
+```bash
+ROOT_ADMIN_EMAIL="tu-email-personal@dominio.com"
+ROOT_ADMIN_PASSWORD="tu-password-seguro"
+```
+
+Luego inicia sesión en `/login` usando Credentials con ese email/password y entra a:
+
+```bash
+/admin
+```
+
+El panel admin permite:
+- Ver métricas globales de la base de datos (users, resumes, applications, cover letters)
+- Buscar usuarios por nombre/email
+- Ver detalle del usuario (plan, estado de suscripción, stripe IDs, perfil)
+- Ver resumes y applications por usuario
+- Usar el QA switcher existente para pruebas
+
 #### Sesión
 
 Estrategia JWT. El JWT callback almacena: `id`, `name`, `email`, `picture`, `role`. En login con Google OAuth, se actualiza el registro del usuario en DB con datos del perfil de Google (name, email, image).
@@ -174,6 +198,47 @@ Requests no autenticados redirigen a `/login`.
 | `customer.subscription.deleted` | Reset a `planType: free`, `subscriptionStatus: canceled`. Log `plan_downgraded` |
 | `invoice.payment_succeeded` | `subscriptionStatus: active`, actualiza `currentPeriodEnd` |
 | `invoice.payment_failed` | `subscriptionStatus: past_due` |
+
+**Transactional emails (Resend)**
+
+Cuando llegan eventos de Stripe, la app envía emails HTML (UI branded) usando Resend:
+
+| Evento Stripe | Email |
+|---|---|
+| `checkout.session.completed` | `welcome` (si viene de free) o `plan_upgraded` |
+| `customer.subscription.updated` | `plan_upgraded` / `plan_downgraded` cuando cambia el plan |
+| `customer.subscription.deleted` | `subscription_canceled` |
+| `invoice.payment_failed` | `payment_failed` |
+
+Detalles técnicos:
+- Helper de envío: `lib/email.ts`
+- Plantillas UI: `lib/email-templates.ts`
+- Deduplicación básica: se registra `stripeEventId` en `usage_logs` (`actionType: billing_email_sent`) para evitar reenvíos por retries del webhook.
+- Si falta `RESEND_API_KEY` o `EMAIL_FROM`, el webhook sigue funcionando y solo se marca el envío como `skipped`.
+
+Variables necesarias en `.env`:
+
+```bash
+RESEND_API_KEY="re_..."
+EMAIL_FROM="ResumeAI <no-reply@tu-dominio.com>"
+SUPPORT_EMAIL="support@tu-dominio.com" # opcional
+```
+
+Prueba local rápida:
+1. Ejecuta `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+2. Dispara un checkout de prueba.
+3. Verifica logs de API y entries en `usage_logs` con `actionType = billing_email_sent`.
+
+Prueba directa de templates (sin Stripe), solo en local/dev:
+
+```bash
+curl -X POST http://localhost:3000/api/debug/email-test \
+  -H "Content-Type: application/json" \
+  -b "next-auth.session-token=TU_COOKIE" \
+  -d '{"to":"tu-email@dominio.com","kind":"welcome","planLabel":"Pro"}'
+```
+
+`kind` soporta: `welcome`, `plan_upgraded`, `plan_downgraded`, `subscription_canceled`, `payment_failed`.
 
 **Customer Portal:** `POST /api/stripe/portal` → Stripe Billing Portal. Return URL: `/settings/billing`.
 
@@ -640,6 +705,7 @@ npm run db:seed:synthetic # Crea usuarios/datos sintéticos para QA automation
 npm run db:reset:synthetic # Elimina solo los datos sintéticos creados por seed
 npm run stripe:listen    # Forwardea webhooks Stripe a localhost
 npm run db:reset:qa-user #reset user plan values
+node scripts/reset-qa-user-for-stripe.cjs kfabiank@gmail.com
 
 ```
 

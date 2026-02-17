@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import AppTopNav from "@/components/AppTopNav";
 import {
-  FileText,
   Check,
   X,
   Sparkles,
@@ -192,32 +192,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </Link>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/templates" className="text-gray-600 hover:text-gray-900">
-                Templates
-              </Link>
-              <Link href="/pricing" className="text-blue-600 font-medium">
-                Pricing
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppTopNav active="pricing" authMode="auto" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Canceled Banner */}

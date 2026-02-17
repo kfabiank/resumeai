@@ -27,6 +27,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { DEFAULT_TEMPLATE_ID, getTemplateById, isTemplateId } from "@/lib/template-catalog";
+import AppTopNav from "@/components/AppTopNav";
 
 interface Experience {
   id: string;
@@ -502,25 +503,17 @@ function ResumeBuilderContent() {
         </div>
       )}
 
-      {/* ── Navigation ── */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="flex items-center gap-2.5 group">
-              <ArrowLeft className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-              <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-1.5 rounded-lg">
-                <FileText className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </Link>
-            <div className="text-sm text-gray-500">
-              Template: <span className="font-medium text-gray-700">{selectedTemplate?.name || "Modern Professional"}</span>
-            </div>
+      <AppTopNav
+        authMode="auto"
+        rightSlot={
+          <div className="text-sm text-gray-500">
+            Template:{" "}
+            <span className="font-medium text-gray-700">
+              {selectedTemplate?.name || "Modern Professional"}
+            </span>
           </div>
-        </div>
-      </nav>
+        }
+      />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* ── Progress Stepper ── */}

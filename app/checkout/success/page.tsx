@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, FileText, ArrowRight, Sparkles } from "lucide-react";
+import { CheckCircle, ArrowRight, Sparkles } from "lucide-react";
+import AppTopNav from "@/components/AppTopNav";
 
 export default function CheckoutSuccessPage() {
   return (
@@ -66,21 +67,7 @@ function CheckoutSuccessContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <AppTopNav authMode="auto" />
 
       <main className="max-w-2xl mx-auto px-4 py-16">
         <div className="bg-white rounded-2xl shadow-xl p-8 text-center">

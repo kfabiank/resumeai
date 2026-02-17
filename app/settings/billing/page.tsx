@@ -57,6 +57,7 @@ export default function BillingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [relinkNotice, setRelinkNotice] = useState<string | null>(null);
   const [user, setUser] = useState<BillingUser | null>(null);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [isRelinking, setIsRelinking] = useState(false);
@@ -169,6 +170,7 @@ export default function BillingPage() {
   const relinkStripe = async () => {
     setIsRelinking(true);
     setError(null);
+    setRelinkNotice(null);
     try {
       const res = await fetch("/api/stripe/relink", {
         method: "POST",
@@ -176,7 +178,14 @@ export default function BillingPage() {
         body: JSON.stringify({}),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.message || body.error || "Failed to relink Stripe");
+      if (!res.ok) {
+        const message = body.message || body.error || "Failed to relink Stripe";
+        if (typeof message === "string" && message.includes("No Stripe subscription found to relink")) {
+          setRelinkNotice("No active Stripe subscription was found for this account yet.");
+          return;
+        }
+        throw new Error(message);
+      }
 
       await loadBillingData();
     } catch (err: any) {
@@ -190,6 +199,8 @@ export default function BillingPage() {
     if (!user || !summary || hasAutoRelinked) return;
     if (user.planType === "free") return;
     if (summary.provider !== "none") return;
+    const hasStripeSignals = Boolean(user.stripeCustomerId) || Boolean(user.subscriptionStatus);
+    if (!hasStripeSignals) return;
 
     setHasAutoRelinked(true);
     void relinkStripe();
@@ -306,6 +317,9 @@ export default function BillingPage() {
                   <p className="text-sm text-amber-700">
                     We could not connect your billing account automatically.
                   </p>
+                  {relinkNotice ? (
+                    <p className="mt-2 text-sm text-amber-700">{relinkNotice}</p>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <button
                       type="button"

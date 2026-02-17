@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Eye, Save, Sparkles, Share2, Loader2, X } from "lucide-react";
 import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
+import AppTopNav from "@/components/AppTopNav";
 import type { ResumeData } from "@/types/resume";
 import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
 import {
@@ -521,7 +522,9 @@ export default function ResumeEditorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b shadow-sm sticky top-0 z-50">
+      <AppTopNav authMode="auto" />
+
+      <div className="bg-white border-b shadow-sm sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/dashboard" className="flex items-center space-x-2">
@@ -586,7 +589,7 @@ export default function ResumeEditorPage() {
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-4">

@@ -31,6 +31,8 @@ function LinkedInMark() {
 
 export default function LoginPage() {
   const [providers, setProviders] = useState<ProviderMap | null>(null);
+  const [providersReady, setProvidersReady] = useState(false);
+  const [providersError, setProvidersError] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,11 +41,21 @@ export default function LoginPage() {
   const [oauthError, setOauthError] = useState<string | null>(null);
 
   useEffect(() => {
-    void getProviders().then(setProviders);
+    const loadProviders = async () => {
+      try {
+        const list = await getProviders();
+        setProviders(list || ({} as ProviderMap));
+      } catch {
+        setProvidersError('Could not load login providers. Try refreshing.');
+      } finally {
+        setProvidersReady(true);
+      }
+    };
+    void loadProviders();
   }, []);
 
-  const hasGoogle = providers ? !!providers.google : true;
-  const hasLinkedIn = providers ? !!providers.linkedin : true;
+  const hasGoogle = !!providers?.google;
+  const hasLinkedIn = !!providers?.linkedin;
   const hasEmail = !!providers?.email;
 
   useEffect(() => {
@@ -68,24 +80,42 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     setAuthError('');
+    if (!providersReady) {
+      setAuthError('Loading providers. Try again in a second.');
+      return;
+    }
     if (providers && !providers.google) {
       setAuthError('Google provider is not configured.');
       return;
     }
 
-    setLoading(true);
-    await signIn('google', { callbackUrl: '/dashboard' });
+    try {
+      setLoading(true);
+      await signIn('google', { callbackUrl: '/dashboard' });
+    } catch {
+      setAuthError('Could not start Google sign-in.');
+      setLoading(false);
+    }
   }
 
   async function handleLinkedIn() {
     setAuthError('');
+    if (!providersReady) {
+      setAuthError('Loading providers. Try again in a second.');
+      return;
+    }
     if (providers && !providers.linkedin) {
       setAuthError('LinkedIn provider is not configured.');
       return;
     }
 
-    setLoading(true);
-    await signIn('linkedin', { callbackUrl: '/dashboard' });
+    try {
+      setLoading(true);
+      await signIn('linkedin', { callbackUrl: '/dashboard' });
+    } catch {
+      setAuthError('Could not start LinkedIn sign-in.');
+      setLoading(false);
+    }
   }
 
   async function handleEmail(e: React.FormEvent<HTMLFormElement>) {
@@ -94,25 +124,34 @@ export default function LoginPage() {
     setAuthError('');
     setEmailSent(false);
 
-    setLoading(true);
     let res;
-    if (password.trim()) {
-      res = await signIn('credentials', {
-        email,
-        password,
-        callbackUrl: '/dashboard',
-        redirect: false,
-      });
-    } else {
-      res = await signIn('email', {
-        email,
-        callbackUrl: '/dashboard',
-        redirect: false,
-      });
-      setEmailSent(!res?.error);
+    try {
+      setLoading(true);
+      if (password.trim()) {
+        res = await signIn('credentials', {
+          email,
+          password,
+          callbackUrl: '/dashboard',
+          redirect: false,
+        });
+      } else {
+        if (!providersReady) {
+          setAuthError('Loading providers. Try again in a second.');
+          return;
+        }
+        res = await signIn('email', {
+          email,
+          callbackUrl: '/dashboard',
+          redirect: false,
+        });
+        setEmailSent(!res?.error);
+      }
+    } catch {
+      setAuthError('Could not complete sign-in. Please try again.');
+      return;
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
     if (res?.error) {
       setAuthError('Invalid credentials or provider not configured.');
       return;
@@ -190,7 +229,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleLinkedIn}
-              disabled={loading || !hasLinkedIn}
+              disabled={loading || !providersReady || !hasLinkedIn}
               className="flex h-12 items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 disabled:opacity-50"
             >
               <LinkedInMark />
@@ -199,7 +238,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleGoogle}
-              disabled={loading || !hasGoogle}
+              disabled={loading || !providersReady || !hasGoogle}
               className="flex h-12 items-center justify-center gap-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 disabled:opacity-50"
             >
               <GoogleMark />
@@ -245,7 +284,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || (!password.trim() && !hasEmail)}
+              disabled={loading || !providersReady || (!password.trim() && !hasEmail)}
               className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 text-white font-semibold transition hover:bg-emerald-600 disabled:opacity-60"
             >
               Sign In
@@ -254,6 +293,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 space-y-2 text-center">
+            {providersError && <p className="text-sm text-red-600">{providersError}</p>}
             {emailSent && <p className="text-sm text-emerald-600">Magic link sent. Check your email.</p>}
             {authError && <p className="text-sm text-red-600">{authError}</p>}
           </div>

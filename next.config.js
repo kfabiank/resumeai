@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === "production";
+const scriptSrc = isProduction
+  ? "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com"
+  : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com";
 
 const csp = [
   "default-src 'self'",
@@ -10,7 +13,7 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
   "style-src 'self' 'unsafe-inline' https:",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+  scriptSrc,
   "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
   "upgrade-insecure-requests",
@@ -56,6 +59,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  distDir: isProduction ? ".next" : ".next-dev",
   images: { domains: ["localhost"] },
   async headers() {
     return [

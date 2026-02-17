@@ -34,9 +34,11 @@ export async function GET() {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        email: true,
         planType: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        subscriptionStatus: true,
       },
     });
 
@@ -44,13 +46,198 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (!user.stripeCustomerId) {
-      return NextResponse.json({
-        provider: "none",
-        currentPlan: { planType: user.planType || "free" },
-        paymentMethod: null,
-        invoices: [],
+    let stripeCustomerId = user.stripeCustomerId;
+
+    const rank = (status: string) => {
+      if (status === "active") return 5;
+      if (status === "trialing") return 4;
+      if (status === "past_due") return 3;
+      if (status === "incomplete") return 2;
+      if (status === "incomplete_expired") return 1;
+      return 0;
+    };
+
+    const pickBestSubscription = (subs: Stripe.Subscription[]) => {
+      if (!subs.length) return null;
+      return [...subs].sort((a, b) => rank(b.status) - rank(a.status))[0];
+    };
+
+    const recoverSubscriptionByKnownId = async () => {
+      if (!user.stripeSubscriptionId) return null;
+      try {
+        return await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
+          expand: ["items.data.price.product", "default_payment_method"],
+        });
+      } catch {
+        return null;
+      }
+    };
+
+    const recoverSubscriptionFromUsageLogs = async () => {
+      const latestUpgrade = await prisma.usageLog.findFirst({
+        where: {
+          userId,
+          actionType: "plan_upgraded",
+        },
+        orderBy: { timestamp: "desc" },
+        select: { metadata: true },
       });
+      const metadata = latestUpgrade?.metadata as Record<string, any> | null;
+      const subId =
+        (typeof metadata?.subscriptionId === "string" && metadata.subscriptionId) ||
+        null;
+      if (!subId) return null;
+      try {
+        return await stripe.subscriptions.retrieve(subId, {
+          expand: ["items.data.price.product", "default_payment_method"],
+        });
+      } catch {
+        return null;
+      }
+    };
+
+    const recoverSubscriptionByUserId = async () => {
+      const matches: Stripe.Subscription[] = [];
+      let startingAfter: string | undefined;
+      let page = 0;
+
+      while (page < 10) {
+        const subs: Stripe.ApiList<Stripe.Subscription> = await stripe.subscriptions.list({
+          status: "all",
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
+          expand: ["data.items.data.price.product", "data.default_payment_method"],
+        });
+        matches.push(...subs.data.filter((sub) => sub.metadata?.userId === userId));
+        if (!subs.has_more || subs.data.length === 0) break;
+        startingAfter = subs.data[subs.data.length - 1]?.id;
+        page += 1;
+      }
+
+      return pickBestSubscription(matches);
+    };
+
+    const recoverCustomerByEmail = async () => {
+      if (!user.email) return null;
+      const customers = await stripe.customers.list({ email: user.email, limit: 5 });
+      const candidate =
+        customers.data.find((c) => !("deleted" in c && c.deleted)) || null;
+      return candidate;
+    };
+
+    const recoverSubscriptionFromEmailCustomers = async () => {
+      if (!user.email) return null;
+      const customers = await stripe.customers.list({ email: user.email, limit: 10 });
+      const validCustomers = customers.data.filter((c) => !("deleted" in c && c.deleted));
+      const collected: Stripe.Subscription[] = [];
+      for (const customer of validCustomers) {
+        const subs = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: "all",
+          limit: 10,
+          expand: ["data.items.data.price.product", "data.default_payment_method"],
+        });
+        collected.push(...subs.data);
+      }
+      return pickBestSubscription(collected);
+    };
+
+    const recoverFromCheckoutSessions = async () => {
+      let startingAfter: string | undefined;
+      let page = 0;
+
+      while (page < 10) {
+        const sessions = await stripe.checkout.sessions.list({
+          limit: 100,
+          ...(startingAfter ? { starting_after: startingAfter } : {}),
+          expand: ["data.subscription"],
+        });
+
+        for (const s of sessions.data) {
+          const matchesUserId = s.metadata?.userId === userId;
+          const sessionEmail = s.customer_details?.email || s.customer_email || null;
+          const matchesEmail =
+            !!user.email && !!sessionEmail && sessionEmail.toLowerCase() === user.email.toLowerCase();
+          if (!matchesUserId && !matchesEmail) continue;
+
+          const subId =
+            typeof s.subscription === "string" ? s.subscription : s.subscription?.id || null;
+          if (subId) {
+            try {
+              const sub = await stripe.subscriptions.retrieve(subId, {
+                expand: ["items.data.price.product", "default_payment_method"],
+              });
+              return sub;
+            } catch {
+              // keep searching
+            }
+          }
+
+          const customerId =
+            typeof s.customer === "string" ? s.customer : s.customer?.id || null;
+          if (customerId) {
+            const subs = await stripe.subscriptions.list({
+              customer: customerId,
+              status: "all",
+              limit: 20,
+              expand: ["data.items.data.price.product", "data.default_payment_method"],
+            });
+            const best = pickBestSubscription(subs.data);
+            if (best) return best;
+          }
+        }
+
+        if (!sessions.has_more || sessions.data.length === 0) break;
+        startingAfter = sessions.data[sessions.data.length - 1]?.id;
+        page += 1;
+      }
+
+      return null;
+    };
+
+    if (!stripeCustomerId) {
+      const recovered = await recoverCustomerByEmail().catch(() => null);
+      if (recovered) {
+        stripeCustomerId = recovered.id;
+        await prisma.user.update({
+          where: { id: userId },
+          data: { stripeCustomerId },
+        });
+      } else {
+        const recoveredSubscription =
+          (await recoverSubscriptionByKnownId().catch(() => null)) ||
+          (await recoverSubscriptionFromUsageLogs().catch(() => null)) ||
+          (await recoverFromCheckoutSessions().catch(() => null)) ||
+          (await recoverSubscriptionByUserId().catch(() => null)) ||
+          (await recoverSubscriptionFromEmailCustomers().catch(() => null));
+        const recoveredFromSubscriptionCustomerId = recoveredSubscription
+          ? typeof recoveredSubscription.customer === "string"
+            ? recoveredSubscription.customer
+            : recoveredSubscription.customer?.id || null
+          : null;
+
+        if (!recoveredFromSubscriptionCustomerId) {
+          return NextResponse.json({
+            provider: "none",
+            currentPlan: { planType: user.planType || "free" },
+            paymentMethod: null,
+            invoices: [],
+          });
+        }
+
+        stripeCustomerId = recoveredFromSubscriptionCustomerId;
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            stripeCustomerId,
+            stripeSubscriptionId: recoveredSubscription?.id || user.stripeSubscriptionId || null,
+            subscriptionStatus: recoveredSubscription?.status || user.subscriptionStatus || null,
+            currentPeriodEnd: recoveredSubscription?.current_period_end
+              ? new Date(recoveredSubscription.current_period_end * 1000)
+              : null,
+          },
+        });
+      }
     }
 
     let customer: Stripe.Customer | null = null;
@@ -58,19 +245,19 @@ export async function GET() {
     let invoices: Stripe.ApiList<Stripe.Invoice> | null = null;
 
     try {
-      customer = (await stripe.customers.retrieve(user.stripeCustomerId, {
+      customer = (await stripe.customers.retrieve(stripeCustomerId, {
         expand: ["invoice_settings.default_payment_method"],
       })) as Stripe.Customer;
 
       subscriptions = await stripe.subscriptions.list({
-        customer: user.stripeCustomerId,
+        customer: stripeCustomerId,
         status: "all",
         limit: 10,
         expand: ["data.items.data.price.product", "data.default_payment_method"],
       });
 
       invoices = await stripe.invoices.list({
-        customer: user.stripeCustomerId,
+        customer: stripeCustomerId,
         limit: 25,
         expand: ["data.charge"],
       });
@@ -81,21 +268,87 @@ export async function GET() {
         stripeErr?.code === "resource_missing" ||
         stripeErr?.statusCode === 404
       ) {
-        return NextResponse.json({
-          provider: "none",
-          currentPlan: { planType: user.planType || "free" },
-          paymentMethod: null,
-          invoices: [],
-          warning: "Stripe customer not found for current environment",
-        });
+        const recovered = await recoverCustomerByEmail().catch(() => null);
+        const recoveredSub =
+          (await recoverSubscriptionByKnownId().catch(() => null)) ||
+          (await recoverSubscriptionFromUsageLogs().catch(() => null)) ||
+          (await recoverFromCheckoutSessions().catch(() => null)) ||
+          (await recoverSubscriptionByUserId().catch(() => null)) ||
+          (await recoverSubscriptionFromEmailCustomers().catch(() => null));
+        const recoveredFromSubCustomerId = recoveredSub
+          ? typeof recoveredSub.customer === "string"
+            ? recoveredSub.customer
+            : recoveredSub.customer?.id || null
+          : null;
+
+        const recoveredCustomerId =
+          recovered?.id && recovered.id !== stripeCustomerId
+            ? recovered.id
+            : recoveredFromSubCustomerId && recoveredFromSubCustomerId !== stripeCustomerId
+            ? recoveredFromSubCustomerId
+            : null;
+
+        if (recoveredCustomerId) {
+          stripeCustomerId = recoveredCustomerId;
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              stripeCustomerId,
+              stripeSubscriptionId: recoveredSub?.id || user.stripeSubscriptionId || null,
+              subscriptionStatus: recoveredSub?.status || user.subscriptionStatus || null,
+              currentPeriodEnd: recoveredSub?.current_period_end
+                ? new Date(recoveredSub.current_period_end * 1000)
+                : null,
+            },
+          });
+
+          customer = (await stripe.customers.retrieve(stripeCustomerId, {
+            expand: ["invoice_settings.default_payment_method"],
+          })) as Stripe.Customer;
+          subscriptions = await stripe.subscriptions.list({
+            customer: stripeCustomerId,
+            status: "all",
+            limit: 10,
+            expand: ["data.items.data.price.product", "data.default_payment_method"],
+          });
+          invoices = await stripe.invoices.list({
+            customer: stripeCustomerId,
+            limit: 25,
+            expand: ["data.charge"],
+          });
+          // recovered successfully, continue response
+        } else {
+          return NextResponse.json({
+            provider: "none",
+            currentPlan: { planType: user.planType || "free" },
+            paymentMethod: null,
+            invoices: [],
+            warning: "Stripe customer not found for current environment",
+          });
+        }
+      } else {
+        throw stripeErr;
       }
-      throw stripeErr;
     }
 
     const currentSubscription =
       subscriptions?.data.find((sub) => sub.id === user.stripeSubscriptionId) ||
       subscriptions?.data[0] ||
       null;
+
+    if (currentSubscription) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          stripeCustomerId,
+          stripeSubscriptionId: currentSubscription.id,
+          subscriptionStatus: currentSubscription.status,
+          currentPeriodEnd: currentSubscription.current_period_end
+            ? new Date(currentSubscription.current_period_end * 1000)
+            : null,
+        },
+      });
+    }
 
     const defaultPm = customer?.invoice_settings
       ?.default_payment_method as Stripe.PaymentMethod | string | null | undefined;
@@ -163,7 +416,14 @@ export async function GET() {
       }),
     });
   } catch (error: any) {
-    console.error("Stripe billing summary error:", error);
+    console.error("Stripe billing summary error:", {
+      message: error?.message,
+      code: error?.code,
+      type: error?.type,
+      param: error?.param,
+      requestId: error?.requestId,
+      statusCode: error?.statusCode,
+    });
     return NextResponse.json(
       { error: "Failed to load billing summary", message: error?.message || "Unknown error" },
       { status: 500 }

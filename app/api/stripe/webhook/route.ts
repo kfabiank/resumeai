@@ -48,10 +48,16 @@ export async function POST(request: NextRequest) {
           const plan = session.metadata?.plan || inferredPlan;
 
           if (userId && plan) {
+            const stripeCustomerId =
+              typeof session.customer === 'string'
+                ? session.customer
+                : session.customer?.id || null;
+
             await prisma.user.update({
               where: { id: userId },
               data: {
                 planType: plan,
+                stripeCustomerId: stripeCustomerId || undefined,
                 stripeSubscriptionId: subscription.id,
                 subscriptionStatus: subscription.status,
                 currentPeriodEnd: new Date(subscription.current_period_end * 1000),

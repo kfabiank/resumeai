@@ -639,6 +639,8 @@ npm run db:studio        # Abre Prisma Studio
 npm run db:seed:synthetic # Crea usuarios/datos sintéticos para QA automation
 npm run db:reset:synthetic # Elimina solo los datos sintéticos creados por seed
 npm run stripe:listen    # Forwardea webhooks Stripe a localhost
+npm run db:reset:qa-user #reset user plan values
+
 ```
 
 ---

@@ -59,47 +59,53 @@ export default function BillingPage() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<BillingUser | null>(null);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [isRelinking, setIsRelinking] = useState(false);
+  const [hasAutoRelinked, setHasAutoRelinked] = useState(false);
+
+  const loadBillingData = async () => {
+    const [profileRes, billingRes] = await Promise.all([
+      fetch("/api/profile", { cache: "no-store" }),
+      fetch("/api/stripe/billing-summary", { cache: "no-store" }),
+    ]);
+
+    if (profileRes.status === 401) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const profileBody = await profileRes.json();
+    if (!profileRes.ok) {
+      throw new Error(profileBody.error || "Failed to load profile");
+    }
+
+    setUser({
+      name: profileBody.name || "",
+      email: profileBody.email || "",
+      planType: profileBody.planType || "free",
+      subscriptionStatus: profileBody.subscriptionStatus || "",
+      currentPeriodEnd: profileBody.currentPeriodEnd || null,
+      stripeCustomerId: profileBody.stripeCustomerId || "",
+    });
+
+    const billingBody = await billingRes.json();
+    if (!billingRes.ok) {
+      setSummary({
+        provider: "none",
+        currentPlan: {
+          planType: profileBody.planType || "free",
+        },
+        paymentMethod: null,
+        invoices: [],
+      });
+    } else {
+      setSummary(billingBody);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profileRes, billingRes] = await Promise.all([
-          fetch("/api/profile", { cache: "no-store" }),
-          fetch("/api/stripe/billing-summary", { cache: "no-store" }),
-        ]);
-
-        if (profileRes.status === 401) {
-          window.location.href = "/login";
-          return;
-        }
-
-        const profileBody = await profileRes.json();
-        if (!profileRes.ok) {
-          throw new Error(profileBody.error || "Failed to load profile");
-        }
-
-        setUser({
-          name: profileBody.name || "",
-          email: profileBody.email || "",
-          planType: profileBody.planType || "free",
-          subscriptionStatus: profileBody.subscriptionStatus || "",
-          currentPeriodEnd: profileBody.currentPeriodEnd || null,
-          stripeCustomerId: profileBody.stripeCustomerId || "",
-        });
-
-        const billingBody = await billingRes.json();
-        if (!billingRes.ok) {
-          setSummary({
-            provider: "none",
-            currentPlan: {
-              planType: profileBody.planType || "free",
-            },
-            paymentMethod: null,
-            invoices: [],
-          });
-        } else {
-          setSummary(billingBody);
-        }
+        await loadBillingData();
       } catch (err: any) {
         setError(err.message || "Failed to load billing data");
       } finally {
@@ -112,7 +118,9 @@ export default function BillingPage() {
 
   const isPaidPlan = (user?.planType || "free") !== "free";
   const canUseStripePortal =
-    isPaidPlan && summary?.provider === "stripe" && Boolean(user?.stripeCustomerId);
+    isPaidPlan &&
+    summary?.provider === "stripe" &&
+    (Boolean(summary?.currentPlan?.subscriptionId) || Boolean(user?.stripeCustomerId));
   const currentPlanName = useMemo(() => {
     const nameFromStripe = summary?.currentPlan?.productName?.trim();
     if (nameFromStripe) return nameFromStripe;
@@ -157,6 +165,35 @@ export default function BillingPage() {
       setIsLoading(false);
     }
   };
+
+  const relinkStripe = async () => {
+    setIsRelinking(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/stripe/relink", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || "Failed to relink Stripe");
+
+      await loadBillingData();
+    } catch (err: any) {
+      setError(err.message || "Failed to relink Stripe");
+    } finally {
+      setIsRelinking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !summary || hasAutoRelinked) return;
+    if (user.planType === "free") return;
+    if (summary.provider !== "none") return;
+
+    setHasAutoRelinked(true);
+    void relinkStripe();
+  }, [user, summary, hasAutoRelinked]);
 
   if (isProfileLoading || !user) {
     return (
@@ -265,10 +302,21 @@ export default function BillingPage() {
               )}
 
               {isPaidPlan && !canUseStripePortal ? (
-                <p className="mt-3 text-sm text-amber-700">
-                  This subscription is not linked to Stripe portal yet. Use pricing to switch/upgrade,
-                  or contact support to migrate billing.
-                </p>
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-sm text-amber-700">
+                    We could not connect your billing account automatically.
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={relinkStripe}
+                      disabled={isRelinking}
+                      className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {isRelinking ? "Reconnecting..." : "Reconnect Billing"}
+                    </button>
+                  </div>
+                </div>
               ) : null}
             </div>
 

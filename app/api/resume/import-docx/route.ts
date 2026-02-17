@@ -5,6 +5,7 @@ import { ensureTemplateExists } from "@/lib/template-db";
 import { getTemplateById, isTemplateId } from "@/lib/template-catalog";
 import { parseDocxTextToResumeContent } from "@/lib/docx-import";
 import { PLAN_LIMITS } from "@/lib/stripe";
+import { canUserPlanUseTemplate } from "@/lib/template-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,7 +68,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  if (template.isPremium && user.planType === "free") {
+  const canUseTemplate = await canUserPlanUseTemplate(user.planType, template.id);
+  if (!canUseTemplate || (template.isPremium && user.planType === "free")) {
     return NextResponse.json(
       { error: "Upgrade required to use premium templates" },
       { status: 403 }

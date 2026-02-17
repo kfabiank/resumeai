@@ -116,7 +116,19 @@ El panel admin permite:
 - Buscar usuarios por nombre/email
 - Ver detalle del usuario (plan, estado de suscripción, stripe IDs, perfil)
 - Ver resumes y applications por usuario
+- Configurar acceso de templates por plan (Free/Pro/Premium) con checkboxes
 - Usar el QA switcher existente para pruebas
+
+Control de templates por plan:
+- Desde `/admin`, sección **Template Access By Plan**.
+- Los cambios se guardan en DB en la tabla `template_plan_access`.
+- Se aplican en backend para:
+  - `POST /api/generate/resume`
+  - `PATCH /api/resume/[id]`
+  - `POST /api/resume/import-docx`
+- También se reflejan en UI:
+  - `/templates`
+  - selector de templates en `/builder/[id]`
 
 #### Sesión
 

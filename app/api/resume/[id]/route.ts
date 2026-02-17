@@ -5,6 +5,7 @@ import { isTemplateId } from '@/lib/template-catalog';
 import { getTemplateById } from '@/lib/template-catalog';
 import { ensureTemplateExists } from '@/lib/template-db';
 import { PLAN_FEATURES } from '@/lib/stripe';
+import { canUserPlanUseTemplate } from '@/lib/template-access';
 
 export async function GET(
   request: NextRequest,
@@ -107,7 +108,8 @@ export async function PATCH(
       const canUsePremiumTemplates =
         PLAN_FEATURES[currentUser.planType as keyof typeof PLAN_FEATURES]
           ?.premiumTemplates ?? false;
-      if (tpl?.isPremium && !canUsePremiumTemplates) {
+      const canUseTemplateByPolicy = await canUserPlanUseTemplate(currentUser.planType, templateId);
+      if (!canUseTemplateByPolicy || (tpl?.isPremium && !canUsePremiumTemplates)) {
         return NextResponse.json(
           { error: 'Upgrade required to use premium templates' },
           { status: 403 }

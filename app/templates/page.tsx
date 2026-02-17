@@ -103,6 +103,7 @@ export default function TemplatesPage() {
     name: "User",
     planType: "free",
   });
+  const [allowedTemplateIds, setAllowedTemplateIds] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -130,7 +131,26 @@ export default function TemplatesPage() {
     void loadProfile();
   }, []);
 
-  const canUseTemplate = (template: TemplateCatalogItem) => !template.isPremium || user.planType !== "free";
+  useEffect(() => {
+    const loadAccess = async () => {
+      try {
+        const res = await fetch("/api/template-access", { cache: "no-store" });
+        if (!res.ok) return;
+        const body = await res.json();
+        if (Array.isArray(body.allowedTemplateIds)) {
+          setAllowedTemplateIds(new Set(body.allowedTemplateIds));
+        }
+      } catch {
+        // fallback to legacy behavior
+      }
+    };
+    void loadAccess();
+  }, []);
+
+  const canUseTemplate = (template: TemplateCatalogItem) => {
+    if (allowedTemplateIds) return allowedTemplateIds.has(template.id);
+    return !template.isPremium || user.planType !== "free";
+  };
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();

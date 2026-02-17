@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth";
 import AdminSwitcher from "./AdminSwitcher";
 import { prisma } from "@/lib/prisma";
+import TemplateAccessManager from "./TemplateAccessManager";
 
 export const dynamic = "force-dynamic";
 
@@ -245,6 +246,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </section>
           </div>
         </section>
+
+        <TemplateAccessManager />
 
         <AdminSwitcher adminEmail={session.user.email || "admin"} />
       </div>

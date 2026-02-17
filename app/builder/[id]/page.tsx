@@ -61,6 +61,7 @@ export default function ResumeEditorPage() {
   const [content, setContent] = useState<ResumeContent | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("modern-professional");
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [allowedTemplateIds, setAllowedTemplateIds] = useState<Set<string> | null>(null);
   const [technicalSkillInput, setTechnicalSkillInput] = useState("");
   const [softSkillInput, setSoftSkillInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -116,6 +117,22 @@ export default function ResumeEditorPage() {
 
     void fetchResume();
   }, [id]);
+
+  useEffect(() => {
+    const loadAccess = async () => {
+      try {
+        const res = await fetch("/api/template-access", { cache: "no-store" });
+        if (!res.ok) return;
+        const body = await res.json();
+        if (Array.isArray(body.allowedTemplateIds)) {
+          setAllowedTemplateIds(new Set(body.allowedTemplateIds));
+        }
+      } catch {
+        // fallback to legacy lock logic
+      }
+    };
+    void loadAccess();
+  }, []);
 
   const selectedTemplate = useMemo(
     () => TEMPLATE_CATALOG.find((t) => t.id === selectedTemplateId),
@@ -648,7 +665,9 @@ export default function ResumeEditorPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
                 >
                   {TEMPLATE_CATALOG.map((template) => {
-                    const isLocked = userPlan === 'free' && template.isPremium;
+                    const isLocked = allowedTemplateIds
+                      ? !allowedTemplateIds.has(template.id)
+                      : userPlan === 'free' && template.isPremium;
                     return (
                       <option key={template.id} value={template.id} disabled={isLocked}>
                         {template.name}{isLocked ? ' (Pro)' : ''}
@@ -656,9 +675,9 @@ export default function ResumeEditorPage() {
                     );
                   })}
                 </select>
-                {selectedTemplate?.isPremium && userPlan === 'free' && (
+                {selectedTemplate && ((allowedTemplateIds && !allowedTemplateIds.has(selectedTemplate.id)) || (!allowedTemplateIds && selectedTemplate.isPremium && userPlan === 'free')) && (
                   <p className="text-xs text-purple-700 mt-2">
-                    This is a premium template. Upgrade your plan to save with this template.
+                    This template is not available in your current plan.
                   </p>
                 )}
               </div>

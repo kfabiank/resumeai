@@ -165,7 +165,6 @@ if (linkedinClientId && linkedinClientSecret) {
       userinfo: 'https://api.linkedin.com/v2/userinfo',
       issuer: 'https://www.linkedin.com/oauth',
       wellKnown: 'https://www.linkedin.com/oauth/.well-known/openid-configuration',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       profile(profile: any) {
         return {
           id: profile.sub,

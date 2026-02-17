@@ -140,6 +140,21 @@ model Template {
   @@map("templates")
 }
 
+model TemplatePlanAccess {
+  id              String   @id @default(cuid())
+  templateId      String
+  planType        String   // free, pro, premium
+  isEnabled       Boolean  @default(true)
+  updatedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([templateId, planType])
+  @@index([templateId])
+  @@index([planType])
+  @@map("template_plan_access")
+}
+
 model JobApplication {
   id            String    @id @default(cuid())
   userId        String

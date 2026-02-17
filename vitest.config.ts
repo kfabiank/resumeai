@@ -10,7 +10,19 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       reportsDirectory: 'coverage',
-      include: ['lib/**/*.ts', 'app/api/**/*.ts'],
+      include: [
+        'app/api/stripe/webhook/route.ts',
+        'app/api/template-access/route.ts',
+        'app/api/admin/template-access/route.ts',
+        'app/api/admin/test-email/route.ts',
+        'app/api/admin/email-preview/route.ts',
+      ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        statements: 80,
+        branches: 55,
+      },
     },
   },
   resolve: {

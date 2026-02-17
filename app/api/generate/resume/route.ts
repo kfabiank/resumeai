@@ -9,6 +9,7 @@ import {
 } from '@/lib/template-catalog';
 import { PLAN_LIMITS, PLAN_FEATURES } from '@/lib/stripe';
 import { ensureTemplateExists } from '@/lib/template-db';
+import { canUserPlanUseTemplate } from '@/lib/template-access';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,10 +52,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check premium template access
+    const canUseSelectedTemplate = await canUserPlanUseTemplate(user.planType, selectedTemplate.id);
     const canUsePremiumTemplates =
       PLAN_FEATURES[user.planType as keyof typeof PLAN_FEATURES]?.premiumTemplates ?? false;
-    if (selectedTemplate.isPremium && !canUsePremiumTemplates) {
+    if (!canUseSelectedTemplate || (selectedTemplate.isPremium && !canUsePremiumTemplates)) {
       return NextResponse.json(
         { error: 'Upgrade required to use premium templates' },
         { status: 403 }

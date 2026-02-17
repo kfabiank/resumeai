@@ -6,7 +6,7 @@ import {
   buildWelcomeEmail,
 } from "@/lib/email-templates";
 
-type BillingEmailKind =
+export type BillingEmailKind =
   | "welcome"
   | "plan_upgraded"
   | "plan_downgraded"
@@ -24,7 +24,11 @@ function getFromEmail() {
   return process.env.EMAIL_FROM || process.env.FROM_EMAIL;
 }
 
-function resolveEmail(kind: BillingEmailKind, planLabel: string, periodEnd: Date | null) {
+export function getBillingEmailPreview(
+  kind: BillingEmailKind,
+  planLabel: string,
+  periodEnd: Date | null
+) {
   if (kind === "welcome") return buildWelcomeEmail(planLabel);
   if (kind === "plan_upgraded") return buildPlanUpgradedEmail(planLabel, periodEnd);
   if (kind === "plan_downgraded") return buildPlanDowngradedEmail();
@@ -49,7 +53,7 @@ export async function sendBillingEmail({
     };
   }
 
-  const email = resolveEmail(kind, planLabel, periodEnd);
+  const email = getBillingEmailPreview(kind, planLabel, periodEnd);
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",

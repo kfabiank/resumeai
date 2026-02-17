@@ -18,6 +18,8 @@ import ProductManagerTemplate from '@/app/lovable-templates/ProductManagerTempla
 import SalesTemplate from '@/app/lovable-templates/SalesTemplate';
 import StartupTemplate from '@/app/lovable-templates/StartupTemplate';
 import UXDesignerTemplate from '@/app/lovable-templates/UXDesignerTemplate';
+import BoardroomTemplate from '@/app/lovable-templates/BoardroomTemplate';
+import ImpactTemplate from '@/app/lovable-templates/ImpactTemplate';
 import type { ResumeData } from '@/types/resume';
 
 type Props = {
@@ -66,6 +68,10 @@ export default function TemplateRenderer({ templateId, data }: Props) {
       return <ProductManagerTemplate data={data} />;
     case 'sales-template':
       return <SalesTemplate data={data} />;
+    case 'boardroom-template':
+      return <BoardroomTemplate data={data} />;
+    case 'impact-template':
+      return <ImpactTemplate data={data} />;
     case 'consultant-pro':
       return <ConsultantTemplate data={data} />;
     case 'simple-clean':

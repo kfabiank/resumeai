@@ -218,6 +218,25 @@ export const TEMPLATE_CATALOG: TemplateCatalogItem[] = [
     isPremium: true,
     colors: 'from-pink-500 to-purple-700',
   },
+  {
+    id: 'boardroom-template',
+    name: 'Boardroom Elite',
+    description: 'High-end executive format with leadership-first storytelling.',
+    category: 'executive',
+    categoryLabel: 'Executive',
+    isPremium: true,
+    colors: 'from-amber-700 to-slate-900',
+  },
+  {
+    id: 'impact-template',
+    name: 'Impact Ledger',
+    description: 'Professional, metrics-focused resume optimized for ATS readability.',
+    category: 'professional',
+    categoryLabel: 'Professional',
+    isPremium: false,
+    isPopular: true,
+    colors: 'from-blue-600 to-slate-900',
+  },
 ];
 
 export const DEFAULT_TEMPLATE_ID = 'modern-professional';

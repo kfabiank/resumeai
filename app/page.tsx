@@ -483,7 +483,7 @@ export default function LandingPage() {
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-slate-300 hover:text-white transition">Features</a>
-              <a href="#templates" className="text-slate-300 hover:text-white transition">Templates</a>
+              <Link href="/templates" className="text-slate-300 hover:text-white transition">Templates</Link>
               <a href="#pricing" className="text-slate-300 hover:text-white transition">Pricing</a>
               <Link href="/login" className="text-cyan-300 hover:text-cyan-200 font-medium transition">
                 Sign In
@@ -1177,7 +1177,7 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="hover:text-white transition">Features</a></li>
-                <li><a href="#templates" className="hover:text-white transition">Templates</a></li>
+                <li><Link href="/templates" className="hover:text-white transition">Templates</Link></li>
                 <li><a href="#pricing" className="hover:text-white transition">Pricing</a></li>
                 <li><a href="#" className="hover:text-white transition">Examples</a></li>
               </ul>

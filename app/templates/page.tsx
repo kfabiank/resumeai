@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Lock, Eye, Star } from "lucide-react";
+import { ArrowRight, ArrowUpDown, Check, Eye, FileText, Lock, Search, Sparkles, Star } from "lucide-react";
 import AppTopNav from "@/components/AppTopNav";
 import {
   isTemplateId,
@@ -13,7 +13,7 @@ import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
 import type { ResumeData } from "@/types/resume";
 
 const categories = [
-  { id: "all", name: "All Templates" },
+  { id: "all", name: "All" },
   { id: "professional", name: "Professional" },
   { id: "tech", name: "Tech" },
   { id: "creative", name: "Creative" },
@@ -21,15 +21,6 @@ const categories = [
   { id: "academic", name: "Academic" },
   { id: "modern", name: "Modern" },
 ];
-
-const CATEGORY_ORDER: Record<string, number> = {
-  professional: 1,
-  tech: 2,
-  creative: 3,
-  executive: 4,
-  academic: 5,
-  modern: 6,
-};
 
 const NEW_TEMPLATE_IDS = new Set([
   "accountant-template",
@@ -47,6 +38,8 @@ const NEW_TEMPLATE_IDS = new Set([
   "sales-template",
   "startup-template",
   "ux-designer-template",
+  "boardroom-template",
+  "impact-template",
 ]);
 
 const PREVIEW_DATA: ResumeData = {
@@ -80,9 +73,7 @@ const PREVIEW_DATA: ResumeData = {
       startDate: "2020-05",
       endDate: "2022-12",
       current: false,
-      optimizedBullets: [
-        "Built recruiter dashboard used by 10k+ MAU.",
-      ],
+      optimizedBullets: ["Built recruiter dashboard used by 10k+ MAU."],
       keywordsUsed: ["react", "typescript"],
     },
   ],
@@ -101,13 +92,18 @@ const PREVIEW_DATA: ResumeData = {
   keywords: ["SaaS", "ATS", "Optimization"],
 };
 
+type SortMode = "recommended" | "name" | "newest";
+
 export default function TemplatesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("recommended");
   const [user, setUser] = useState<{ name: string; planType: string }>({
     name: "User",
     planType: "free",
   });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -121,401 +117,358 @@ export default function TemplatesPage() {
     const loadProfile = async () => {
       try {
         const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setIsAuthenticated(false);
+          return;
+        }
         const body = await res.json();
         setUser({
           name: body.name || body.email?.split("@")?.[0] || "User",
           planType: body.planType || "free",
         });
+        setIsAuthenticated(true);
       } catch {
-        // Keep free defaults when not authenticated
+        // Keep defaults for guests
+        setIsAuthenticated(false);
       }
     };
 
     void loadProfile();
   }, []);
 
-  const filteredTemplates = (
-    selectedCategory === "all"
-      ? TEMPLATE_CATALOG
-      : TEMPLATE_CATALOG.filter((t) => t.category === selectedCategory)
-  ).slice().sort((a, b) => {
-    const aIsNew = NEW_TEMPLATE_IDS.has(a.id) ? 1 : 0;
-    const bIsNew = NEW_TEMPLATE_IDS.has(b.id) ? 1 : 0;
-    if (aIsNew !== bIsNew) return bIsNew - aIsNew;
-    const categoryDiff = (CATEGORY_ORDER[a.category] || 999) - (CATEGORY_ORDER[b.category] || 999);
-    if (categoryDiff !== 0) return categoryDiff;
-    return a.name.localeCompare(b.name);
-  });
+  const canUseTemplate = (template: TemplateCatalogItem) => !template.isPremium || user.planType !== "free";
 
-  const newTemplates = filteredTemplates.filter((t) => NEW_TEMPLATE_IDS.has(t.id));
-  const classicTemplates = filteredTemplates.filter((t) => !NEW_TEMPLATE_IDS.has(t.id));
+  const categoryCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of TEMPLATE_CATALOG) {
+      map.set(item.category, (map.get(item.category) || 0) + 1);
+    }
+    return map;
+  }, []);
 
-  const canUseTemplate = (template: TemplateCatalogItem) => {
-    return !template.isPremium || user.planType !== "free";
-  };
+  const filteredTemplates = useMemo(() => {
+    const base = TEMPLATE_CATALOG.filter((item) => {
+      const inCategory = selectedCategory === "all" || item.category === selectedCategory;
+      if (!inCategory) return false;
+      if (!query.trim()) return true;
+      const q = query.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.categoryLabel.toLowerCase().includes(q)
+      );
+    });
+
+    const sorted = [...base];
+    if (sortMode === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      return sorted;
+    }
+
+    if (sortMode === "newest") {
+      sorted.sort((a, b) => Number(NEW_TEMPLATE_IDS.has(b.id)) - Number(NEW_TEMPLATE_IDS.has(a.id)));
+      return sorted;
+    }
+
+    sorted.sort((a, b) => {
+      const aWeight =
+        (NEW_TEMPLATE_IDS.has(a.id) ? 20 : 0) +
+        (a.isPopular ? 10 : 0) +
+        (a.isPremium ? 2 : 0);
+      const bWeight =
+        (NEW_TEMPLATE_IDS.has(b.id) ? 20 : 0) +
+        (b.isPopular ? 10 : 0) +
+        (b.isPremium ? 2 : 0);
+      if (aWeight !== bWeight) return bWeight - aWeight;
+      return a.name.localeCompare(b.name);
+    });
+    return sorted;
+  }, [query, selectedCategory, sortMode]);
+
   const selectedTemplateData = selectedTemplate
-    ? TEMPLATE_CATALOG.find((t) => t.id === selectedTemplate) || null
+    ? TEMPLATE_CATALOG.find((item) => item.id === selectedTemplate) || null
     : null;
 
+  const featuredCount = TEMPLATE_CATALOG.filter(
+    (item) => NEW_TEMPLATE_IDS.has(item.id) || item.isPopular
+  ).length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100">
-      <AppTopNav active="templates" userName={user.name} planType={user.planType} />
+    <div className="min-h-screen bg-slate-100">
+      {isAuthenticated ? (
+        <AppTopNav active="templates" userName={user.name} planType={user.planType} />
+      ) : (
+        <PublicTopNav />
+      )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 px-8 py-10 shadow-2xl">
-          <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Resume Templates</h1>
-          <p className="text-slate-100 max-w-3xl">
-            Pick a design, preview it with your data, and switch anytime based on your plan.
-          </p>
-        </div>
-
-        {/* Category Filter */}
-        <div className="mb-8 flex flex-wrap gap-3">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition ${
-                selectedCategory === category.id
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-blue-300/30"
-                  : "bg-white/90 text-slate-700 border border-white hover:bg-white"
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Templates Grid */}
-        {selectedCategory === "all" && newTemplates.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">New Templates</h2>
-              <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-                {newTemplates.length} new
-              </span>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl" />
+          <div className="absolute -left-16 bottom-0 h-52 w-52 rounded-full bg-blue-200/30 blur-3xl" />
+          <div className="relative">
+            <div className="mb-3 inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Professional Collection
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {newTemplates.map((template) => (
-                <div
-                  key={template.id}
-                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
-                    selectedTemplate === template.id
-                      ? "border-blue-500 ring-2 ring-blue-200"
-                      : "border-gray-200 hover:border-blue-300"
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900">Resume Templates</h1>
+            <p className="mt-3 max-w-3xl text-slate-600">
+              Choose a high-conversion design, preview it instantly, and switch templates anytime.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatCard label="Total Templates" value={`${TEMPLATE_CATALOG.length}`} />
+              <StatCard label="Featured" value={`${featuredCount}`} />
+              <StatCard
+                label="Premium"
+                value={`${TEMPLATE_CATALOG.filter((item) => item.isPremium).length}`}
+              />
+              <StatCard label="Free" value={`${TEMPLATE_CATALOG.filter((item) => !item.isPremium).length}`} />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by style, industry or category..."
+                className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none ring-blue-500 transition focus:ring-2"
+              />
+            </div>
+            <div className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                className="bg-transparent text-sm font-medium text-slate-700 outline-none"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="newest">Newest First</option>
+                <option value="name">Name A-Z</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const count =
+                category.id === "all" ? TEMPLATE_CATALOG.length : categoryCounts.get(category.id) || 0;
+              const active = selectedCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    active
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
-                  {/* Template Preview */}
-                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                    <div className="absolute inset-0 overflow-hidden bg-white">
-                      <div className="origin-top-left scale-[0.28] w-[794px]">
-                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
-                      </div>
-                    </div>
-
-                    {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                        New
-                      </span>
-                      {template.isPremium && (
-                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                          <Lock className="h-3 w-3 mr-1" />
-                          Pro
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => setSelectedTemplate(template.id)}
-                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Template Info */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-
-                    {canUseTemplate(template) ? (
-                      <button
-                        onClick={() => setSelectedTemplate(template.id)}
-                        className={`w-full py-2 rounded-lg font-medium transition ${
-                          selectedTemplate === template.id
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
-                        }`}
-                      >
-                        {selectedTemplate === template.id ? (
-                          <span className="flex items-center justify-center">
-                            <Check className="h-4 w-4 mr-2" />
-                            Selected
-                          </span>
-                        ) : (
-                          "Select Template"
-                        )}
-                      </button>
-                    ) : (
-                      <Link
-                        href="/pricing"
-                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
-                      >
-                        <Lock className="h-4 w-4 mr-2" />
-                        Upgrade to Use
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                  <span>{category.name}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${active ? "bg-blue-500" : "bg-white"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        )}
+        </section>
 
-        {selectedCategory === "all" && classicTemplates.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Classic Templates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {classicTemplates.map((template) => (
-                <div
+        <section className="mt-6">
+          {filteredTemplates.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+              No templates match your search.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filteredTemplates.map((template) => (
+                <TemplateCard
                   key={template.id}
-                  className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
-                    selectedTemplate === template.id
-                      ? "border-blue-500 ring-2 ring-blue-200"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
-                >
-                  {/* Template Preview */}
-                  <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                    <div className="absolute inset-0 overflow-hidden bg-white">
-                      <div className="origin-top-left scale-[0.28] w-[794px]">
-                        <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
-                      </div>
-                    </div>
-
-                    {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      {template.isPopular && (
-                        <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                          <Star className="h-3 w-3 mr-1" />
-                          Popular
-                        </span>
-                      )}
-                      {template.isPremium && (
-                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                          <Lock className="h-3 w-3 mr-1" />
-                          Pro
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => setSelectedTemplate(template.id)}
-                        className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Template Info */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-
-                    {canUseTemplate(template) ? (
-                      <button
-                        onClick={() => setSelectedTemplate(template.id)}
-                        className={`w-full py-2 rounded-lg font-medium transition ${
-                          selectedTemplate === template.id
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
-                        }`}
-                      >
-                        {selectedTemplate === template.id ? (
-                          <span className="flex items-center justify-center">
-                            <Check className="h-4 w-4 mr-2" />
-                            Selected
-                          </span>
-                        ) : (
-                          "Select Template"
-                        )}
-                      </button>
-                    ) : (
-                      <Link
-                        href="/pricing"
-                        className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
-                      >
-                        <Lock className="h-4 w-4 mr-2" />
-                        Upgrade to Use
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                  template={template}
+                  selected={selectedTemplate === template.id}
+                  isNew={NEW_TEMPLATE_IDS.has(template.id)}
+                  canUse={canUseTemplate(template)}
+                  onSelect={() => setSelectedTemplate(template.id)}
+                />
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </section>
 
-        {selectedCategory !== "all" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template) => (
-            <div
-              key={template.id}
-              className={`bg-white rounded-xl shadow-sm border-2 overflow-hidden transition-all hover:shadow-lg ${
-                selectedTemplate === template.id
-                  ? "border-blue-500 ring-2 ring-blue-200"
-                  : "border-gray-200 hover:border-blue-300"
-              }`}
-            >
-              {/* Template Preview */}
-              <div className="relative aspect-[8.5/11] bg-gray-100 group">
-                <div className="absolute inset-0 overflow-hidden bg-white">
-                  <div className="origin-top-left scale-[0.28] w-[794px]">
-                    <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
-                  </div>
-                </div>
-
-                {/* Badges */}
-                <div className="absolute top-3 left-3 flex flex-col gap-2">
-                  {NEW_TEMPLATE_IDS.has(template.id) && (
-                    <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      New
-                    </span>
-                  )}
-                  {template.isPopular && (
-                    <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                      <Star className="h-3 w-3 mr-1" />
-                      Popular
-                    </span>
-                  )}
-                  {template.isPremium && (
-                    <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-medium flex items-center">
-                      <Lock className="h-3 w-3 mr-1" />
-                      Pro
-                    </span>
-                  )}
-                </div>
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium flex items-center hover:bg-gray-100 transition"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </button>
-                </div>
-              </div>
-
-              {/* Template Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{template.description}</p>
-
-                {canUseTemplate(template) ? (
-                  <button
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={`w-full py-2 rounded-lg font-medium transition ${
-                      selectedTemplate === template.id
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white"
-                    }`}
-                  >
-                    {selectedTemplate === template.id ? (
-                      <span className="flex items-center justify-center">
-                        <Check className="h-4 w-4 mr-2" />
-                        Selected
-                      </span>
-                    ) : (
-                      "Select Template"
-                    )}
-                  </button>
-                ) : (
-                  <Link
-                    href="/pricing"
-                    className="w-full py-2 rounded-lg font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition flex items-center justify-center"
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Upgrade to Use
-                  </Link>
-                )}
-              </div>
-            </div>
-            ))}
-          </div>
-        )}
-
-        {/* Selected Template Action */}
         {selectedTemplateData && (
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <section className="sticky bottom-3 mt-8 rounded-2xl border border-blue-200 bg-white p-4 shadow-xl">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="text-sm font-semibold text-slate-900">
                   Selected: {selectedTemplateData.name}
                 </p>
-                <p className="text-sm text-gray-600">
-                  Ready to create your resume with this template
-                </p>
+                <p className="text-sm text-slate-600">Create your next resume with this design.</p>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedTemplate(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                 >
                   Cancel
                 </button>
                 {canUseTemplate(selectedTemplateData) ? (
                   <Link
                     href={`/builder/new?template=${selectedTemplateData.id}`}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                    className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
                     Use This Template
                   </Link>
                 ) : (
                   <Link
                     href="/pricing"
-                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium"
+                    className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                   >
                     Upgrade to Use
                   </Link>
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Upgrade Banner for Free Users */}
-        {user.planType === "free" && (
-          <div className="mt-12 bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl shadow-lg p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Unlock All Premium Templates</h3>
-                <p className="text-purple-100">
-                  Upgrade to Pro and get access to 20+ premium templates designed by professionals.
-                </p>
-              </div>
-              <Link
-                href="/pricing"
-                className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition font-semibold shadow-xl whitespace-nowrap"
-              >
-                Upgrade to Pro
-              </Link>
-            </div>
-          </div>
+          </section>
         )}
       </main>
     </div>
+  );
+}
+
+function PublicTopNav() {
+  return (
+    <nav className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 shadow-lg shadow-blue-500/20">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            ResumeAI
+          </span>
+        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+            Pricing
+          </Link>
+          <Link href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+            Sign In
+          </Link>
+          <Link
+            href="/builder/new"
+            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Get Started
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <p className="text-xs uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function TemplateCard({
+  template,
+  selected,
+  isNew,
+  canUse,
+  onSelect,
+}: {
+  template: TemplateCatalogItem;
+  selected: boolean;
+  isNew: boolean;
+  canUse: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <article
+      className={`group overflow-hidden rounded-2xl border bg-white transition ${
+        selected ? "border-blue-500 shadow-lg shadow-blue-100" : "border-slate-200 hover:border-blue-300 hover:shadow-md"
+      }`}
+    >
+      <div className="relative aspect-[8.5/11] overflow-hidden bg-slate-100">
+        <div className="absolute inset-0 bg-white">
+          <div className="origin-top-left scale-[0.29] w-[794px]">
+            <TemplateRenderer templateId={template.id} data={PREVIEW_DATA} />
+          </div>
+        </div>
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          {isNew ? (
+            <span className="rounded-full bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">
+              New
+            </span>
+          ) : null}
+          {template.isPopular ? (
+            <span className="inline-flex items-center rounded-full bg-amber-500 px-2 py-1 text-[11px] font-semibold text-white">
+              <Star className="mr-1 h-3 w-3" />
+              Popular
+            </span>
+          ) : null}
+          {template.isPremium ? (
+            <span className="inline-flex items-center rounded-full bg-violet-600 px-2 py-1 text-[11px] font-semibold text-white">
+              <Lock className="mr-1 h-3 w-3" />
+              Pro
+            </span>
+          ) : null}
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/45 opacity-0 transition group-hover:opacity-100">
+          <button
+            onClick={onSelect}
+            className="inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview & Select
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-slate-900">{template.name}</h3>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+            {template.categoryLabel}
+          </span>
+        </div>
+        <p className="mb-4 text-sm text-slate-600">{template.description}</p>
+
+        {canUse ? (
+          <button
+            onClick={onSelect}
+            className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-800 hover:bg-blue-600 hover:text-white"
+            }`}
+          >
+            {selected ? (
+              <span className="inline-flex items-center">
+                <Check className="mr-1.5 h-4 w-4" />
+                Selected
+              </span>
+            ) : (
+              "Select Template"
+            )}
+          </button>
+        ) : (
+          <Link
+            href="/pricing"
+            className="inline-flex w-full items-center justify-center rounded-lg bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-200"
+          >
+            <Lock className="mr-1.5 h-4 w-4" />
+            Upgrade to Use
+          </Link>
+        )}
+      </div>
+    </article>
   );
 }

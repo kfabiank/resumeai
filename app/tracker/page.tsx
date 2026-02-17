@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
-  FileText,
   Plus,
   Search,
   Filter,
@@ -26,7 +25,7 @@ import {
   UserPlus,
   Bell,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import AppTopNav from "@/components/AppTopNav";
 
 interface Contact {
   name: string;
@@ -500,38 +499,7 @@ export default function TrackerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Nav */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</Link>
-              <Link href="/templates" className="text-gray-600 hover:text-gray-900">Templates</Link>
-              <Link href="/tracker" className="text-blue-600 font-medium">Tracker</Link>
-              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              </Link>
-              <button type="button" onClick={() => signOut({ callbackUrl: "/login" })} className="text-sm text-gray-600 hover:text-red-600">
-                Log out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppTopNav active="tracker" userName={user.name} planType={user.planType} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

@@ -1,13 +1,86 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+import {
+  defaultDescription,
+  defaultKeywords,
+  defaultTitle,
+  siteName,
+  siteUrl,
+} from "@/lib/seo";
 
 const inter = Inter({ subsets: ["latin"] });
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: siteName,
+  url: siteUrl,
+  logo: `${siteUrl}/linkedin-temp-logo.png`,
+  sameAs: [],
+};
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: siteName,
+  url: siteUrl,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/templates?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
 
 export const metadata: Metadata = {
-  title: "ResumeAI - AI-Powered Resume Builder | ATS-Optimized CVs in Minutes",
-  description: "Create ATS-optimized resumes in minutes with AI. Get real-time ATS scores, job-specific optimization, and professional templates. Land your dream job faster with ResumeAI.",
-  keywords: "resume builder, CV maker, ATS optimization, AI resume, job application, cover letter, career",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: defaultTitle,
+    template: `%s | ${siteName}`,
+  },
+  description: defaultDescription,
+  applicationName: siteName,
+  referrer: "origin-when-cross-origin",
+  keywords: defaultKeywords,
+  alternates: {
+    canonical: "/",
+  },
+  authors: [{ name: siteName, url: siteUrl }],
+  creator: siteName,
+  publisher: siteName,
+  category: "career",
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    title: defaultTitle,
+    description: defaultDescription,
+    siteName,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: {
+      "msvalidate.01": process.env.BING_SITE_VERIFICATION || "",
+    },
+  },
 };
 
 export default function RootLayout({
@@ -17,7 +90,31 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {gaMeasurementId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${gaMeasurementId}', { page_path: window.location.pathname });`}
+            </Script>
+          </>
+        ) : null}
+
+        <Script id="jsonld-org" type="application/ld+json" strategy="afterInteractive">
+          {JSON.stringify(organizationSchema)}
+        </Script>
+        <Script id="jsonld-website" type="application/ld+json" strategy="afterInteractive">
+          {JSON.stringify(websiteSchema)}
+        </Script>
+
+        {children}
+      </body>
     </html>
   );
 }

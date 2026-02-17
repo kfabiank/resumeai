@@ -468,29 +468,29 @@ export default function LandingPage() {
   }, [queryPreview]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100">
       {/* Navigation */}
-      <nav className="border-b bg-white/80 backdrop-blur-sm fixed w-full z-50 shadow-sm">
+      <nav className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md fixed w-full z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
+              <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-lg shadow-lg shadow-blue-900/40">
                 <FileText className="h-6 w-6 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
                 ResumeAI
               </span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
-              <a href="#templates" className="text-gray-600 hover:text-gray-900 transition">Templates</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition">Pricing</a>
-              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition">
+              <a href="#features" className="text-slate-300 hover:text-white transition">Features</a>
+              <a href="#templates" className="text-slate-300 hover:text-white transition">Templates</a>
+              <a href="#pricing" className="text-slate-300 hover:text-white transition">Pricing</a>
+              <Link href="/login" className="text-cyan-300 hover:text-cyan-200 font-medium transition">
                 Sign In
               </Link>
               <Link 
                 href="/login" 
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-600/30"
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-2.5 rounded-lg hover:from-cyan-400 hover:to-blue-400 transition shadow-lg shadow-blue-900/50"
               >
                 Get Started Free
               </Link>
@@ -500,35 +500,35 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <section className="pt-32 pb-20 px-4 bg-[radial-gradient(circle_at_30%_20%,rgba(34,211,238,0.18),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.2),transparent_40%)]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-4xl mx-auto mb-16">
-            <div className="inline-flex items-center space-x-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <div className="inline-flex items-center space-x-2 bg-cyan-300/15 text-cyan-200 border border-cyan-200/20 px-4 py-2 rounded-full text-sm font-medium mb-6">
               <Sparkles className="h-4 w-4" />
-              <span>AI-Powered Resume Optimization</span>
+              <span>AI Resume Studio</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               Beat the ATS.<br />
-              Land the <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">Interview</span>.
+              Land the <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">Interview</span>.
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-slate-300 mb-8 leading-relaxed">
               75% of resumes never reach a human. Create ATS-optimized resumes with AI 
-              that <span className="font-semibold text-gray-900">actually get you interviews</span>.
+              that <span className="font-semibold text-white">actually get you interviews</span>.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link 
                 href="/builder/new" 
-                className="inline-flex items-center justify-center bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition text-lg font-semibold shadow-xl shadow-blue-600/30"
+                className="inline-flex items-center justify-center bg-emerald-500 text-white px-8 py-4 rounded-lg hover:bg-emerald-400 transition text-lg font-semibold shadow-xl shadow-emerald-900/30"
               >
                 Create Resume Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
               <a 
                 href="#demo" 
-                className="inline-flex items-center justify-center border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition text-lg font-semibold"
+                className="inline-flex items-center justify-center border-2 border-slate-500 text-slate-100 px-8 py-4 rounded-lg hover:border-slate-300 hover:bg-white/10 transition text-lg font-semibold"
               >
                 <BarChart3 className="mr-2 h-5 w-5" />
                 See ATS Score Demo
@@ -536,45 +536,45 @@ export default function LandingPage() {
             </div>
 
             {/* Social Proof */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-slate-300">
               <div className="flex items-center">
                 <div className="flex -space-x-2 mr-3">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white" />
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-slate-900" />
                   ))}
                 </div>
-                <span><strong className="text-gray-900">10,000+</strong> resumes created</span>
+                <span><strong className="text-white">10,000+</strong> resumes created</span>
               </div>
               <div className="flex items-center">
                 <div className="flex text-yellow-400 mr-2">
                   {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="h-4 w-4 fill-current" />)}
                 </div>
-                <span><strong className="text-gray-900">4.9/5</strong> rating</span>
+                <span><strong className="text-white">4.9/5</strong> rating</span>
               </div>
               <div className="flex items-center">
-                <TrendingUp className="h-5 w-5 text-green-600 mr-2" />
-                <span><strong className="text-gray-900">3x more</strong> interviews</span>
+                <TrendingUp className="h-5 w-5 text-emerald-300 mr-2" />
+                <span><strong className="text-white">3x more</strong> interviews</span>
               </div>
             </div>
           </div>
 
           {/* Hero Image/Demo */}
           <div className="relative max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-6 py-4 border-b flex items-center space-x-2">
+            <div className="bg-slate-900/70 rounded-2xl shadow-2xl border border-white/15 overflow-hidden backdrop-blur">
+              <div className="bg-slate-800/70 px-6 py-4 border-b border-white/10 flex items-center space-x-2">
                 <div className="flex space-x-2">
                   <div className="w-3 h-3 rounded-full bg-red-400" />
                   <div className="w-3 h-3 rounded-full bg-yellow-400" />
                   <div className="w-3 h-3 rounded-full bg-green-400" />
                 </div>
-                <div className="flex-1 text-center text-sm text-gray-600 font-medium">
+                <div className="flex-1 text-center text-sm text-slate-300 font-medium">
                   resume-builder.ai
                 </div>
               </div>
-              <div className="p-8 bg-gradient-to-br from-blue-50 to-white">
+              <div className="p-8 bg-gradient-to-br from-slate-800/40 to-slate-900/50">
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Resume Preview */}
-                  <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 h-96 overflow-hidden">
+                  <div className="bg-white rounded-lg shadow-lg border border-slate-300 p-6 h-96 overflow-hidden">
                     <div className="space-y-4">
                       <div className="h-6 bg-gray-800 rounded w-3/4" />
                       <div className="h-4 bg-gray-300 rounded w-1/2" />
@@ -595,7 +595,7 @@ export default function LandingPage() {
                   
                   {/* ATS Score */}
                   <div className="space-y-6">
-                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+                    <div className="bg-white rounded-lg shadow-lg border border-slate-300 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <span className="text-sm font-medium text-gray-600">ATS Score</span>
                         <span className="text-xs text-gray-500">Real-time</span>
@@ -615,7 +615,7 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+                    <div className="bg-white rounded-lg shadow-lg border border-slate-300 p-6">
                       <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                         <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
                         Optimizations Applied
@@ -641,13 +641,13 @@ export default function LandingPage() {
             </div>
 
             {/* Floating elements */}
-            <div className="absolute -top-6 -left-6 bg-white rounded-lg shadow-xl border border-gray-200 p-4 hidden lg:block animate-pulse">
+            <div className="absolute -top-6 -left-6 bg-slate-900 text-slate-100 rounded-lg shadow-xl border border-white/20 p-4 hidden lg:block animate-pulse">
               <div className="flex items-center space-x-2">
                 <Zap className="h-5 w-5 text-yellow-500" />
                 <span className="text-sm font-medium">AI Optimizing...</span>
               </div>
             </div>
-            <div className="absolute -bottom-6 -right-6 bg-white rounded-lg shadow-xl border border-gray-200 p-4 hidden lg:block">
+            <div className="absolute -bottom-6 -right-6 bg-slate-900 text-slate-100 rounded-lg shadow-xl border border-white/20 p-4 hidden lg:block">
               <div className="flex items-center space-x-2">
                 <Target className="h-5 w-5 text-green-500" />
                 <span className="text-sm font-medium">+35 points</span>

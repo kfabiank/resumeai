@@ -35,6 +35,34 @@ App local: [http://localhost:3000](http://localhost:3000)
 
 ---
 
+## SEO + Google Analytics
+
+La app ya incluye:
+- Metadata SEO global (title template, canonical, OpenGraph, Twitter, robots)
+- Schema.org (`Organization` + `WebSite`)
+- `robots.txt` dinámico (`/robots.txt`)
+- `sitemap.xml` dinámico (`/sitemap.xml`)
+- Google Analytics 4 (`gtag`) si defines `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+
+Variables requeridas en `.env`:
+
+```bash
+NEXT_PUBLIC_APP_URL="https://tu-dominio.com"
+NEXT_PUBLIC_SITE_URL="https://tu-dominio.com"
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
+GOOGLE_SITE_VERIFICATION="tu-token-search-console"
+BING_SITE_VERIFICATION=""
+```
+
+Pasos recomendados para posicionamiento:
+1. En producción, usar dominio real en `NEXT_PUBLIC_SITE_URL`.
+2. Verificar dominio en Google Search Console con `GOOGLE_SITE_VERIFICATION`.
+3. Enviar sitemap: `https://tu-dominio.com/sitemap.xml`.
+4. Verificar indexación de `https://tu-dominio.com/robots.txt`.
+5. Revisar Core Web Vitals y coverage en Search Console semanalmente.
+
+---
+
 ## Lógica de Negocio
 
 ### 1. Autenticación y Autorización
@@ -565,6 +593,24 @@ Qué actualiza automáticamente:
 - `app/lovable-templates/TemplateRenderer.tsx` (import + case)
 - `lib/template-catalog.ts` (entrada del template)
 
+### Staging UI Migration Script (Lovable -> Next.js)
+
+Para traer el diseño de `resume-ai-connector` sin sobrescribir tu app Next.js:
+
+```bash
+npm run ui:migrate:lovable -- --source ../resume-ai-connector --clean
+```
+
+Esto copia archivos a:
+- `.migration/lovable/src/components`
+- `.migration/lovable/src/pages`
+- `.migration/lovable/src/hooks`
+- `.migration/lovable/src/lib`
+- `.migration/lovable/public`
+- `.migration/lovable/meta/*` (configs de referencia)
+
+Luego migra manualmente por página desde staging hacia `app/*/page.tsx`.
+
 ### LinkedIn Data Export (CSV) para Experience/Education/Skills
 
 El login OAuth de LinkedIn normalmente solo entrega datos básicos.  
@@ -593,6 +639,8 @@ npm run db:studio        # Abre Prisma Studio
 npm run db:seed:synthetic # Crea usuarios/datos sintéticos para QA automation
 npm run db:reset:synthetic # Elimina solo los datos sintéticos creados por seed
 npm run stripe:listen    # Forwardea webhooks Stripe a localhost
+npm run db:reset:qa-user #reset user plan values
+
 ```
 
 ---

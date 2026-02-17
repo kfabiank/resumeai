@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, Check, Lock, Eye, Star } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { Check, Lock, Eye, Star } from "lucide-react";
+import AppTopNav from "@/components/AppTopNav";
 import {
   isTemplateId,
   TEMPLATE_CATALOG,
@@ -159,67 +159,28 @@ export default function TemplatesPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-2 rounded-lg">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
-                ResumeAI
-              </span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link href="/templates" className="text-blue-600 font-medium">
-                Templates
-              </Link>
-              <Link href="/tracker" className="text-gray-600 hover:text-gray-900">
-                Tracker
-              </Link>
-              <Link href="/profile" className="flex items-center space-x-3 hover:opacity-90 transition">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.planType} Plan</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              </Link>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-sm text-gray-600 hover:text-red-600"
-              >
-                Log out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-100">
+      <AppTopNav active="templates" userName={user.name} planType={user.planType} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Resume Templates</h1>
-          <p className="text-gray-600">Choose from our collection of ATS-optimized templates designed to get you noticed.</p>
+        <div className="mb-8 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-900 px-8 py-10 shadow-2xl">
+          <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Resume Templates</h1>
+          <p className="text-slate-100 max-w-3xl">
+            Pick a design, preview it with your data, and switch anytime based on your plan.
+          </p>
         </div>
 
         {/* Category Filter */}
-        <div className="mb-8 flex flex-wrap gap-2">
+        <div className="mb-8 flex flex-wrap gap-3">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition ${
                 selectedCategory === category.id
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-blue-300/30"
+                  : "bg-white/90 text-slate-700 border border-white hover:bg-white"
               }`}
             >
               {category.name}

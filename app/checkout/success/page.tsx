@@ -17,14 +17,40 @@ function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [isLoading, setIsLoading] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In production, you might want to verify the session with your API
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    let mounted = true;
 
-    return () => clearTimeout(timer);
+    const syncSubscription = async () => {
+      if (!sessionId) {
+        if (mounted) setIsLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/stripe/sync-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(body?.message || "Could not confirm subscription in local environment");
+        }
+      } catch (error: any) {
+        if (mounted) {
+          setSyncError(error?.message || "Could not sync subscription");
+        }
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    void syncSubscription();
+    return () => {
+      mounted = false;
+    };
   }, [sessionId]);
 
   if (isLoading) {
@@ -70,6 +96,12 @@ function CheckoutSuccessContent() {
           <p className="text-lg text-gray-600 mb-8">
             Your subscription is now active. You have access to all premium features.
           </p>
+
+          {syncError ? (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {syncError}
+            </div>
+          ) : null}
 
           {/* Features unlocked */}
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 mb-8">

@@ -57,30 +57,36 @@ providers.push(
           ? 'pro'
           : 'free';
 
-        const qaUser = await prisma.user.upsert({
+        const qaName =
+          qaPlanType === 'premium'
+            ? 'QA Premium User'
+            : qaPlanType === 'pro'
+            ? 'QA Pro User'
+            : 'QA Free User';
+
+        const existingQaUser = await prisma.user.findUnique({
           where: { email },
-          update: {
-            name:
-              qaPlanType === 'premium'
-                ? 'QA Premium User'
-                : qaPlanType === 'pro'
-                ? 'QA Pro User'
-                : 'QA Free User',
-            planType: qaPlanType,
-            emailVerified: now,
-          },
-          create: {
-            email,
-            name:
-              qaPlanType === 'premium'
-                ? 'QA Premium User'
-                : qaPlanType === 'pro'
-                ? 'QA Pro User'
-                : 'QA Free User',
-            planType: qaPlanType,
-            emailVerified: now,
-          },
+          select: { id: true },
         });
+
+        const qaUser = existingQaUser
+          ? await prisma.user.update({
+              where: { email },
+              data: {
+                name: qaName,
+                emailVerified: now,
+                // Intentionally do NOT force planType on each login.
+                // This allows real Stripe upgrades/downgrades to persist.
+              },
+            })
+          : await prisma.user.create({
+              data: {
+                email,
+                name: qaName,
+                planType: qaPlanType,
+                emailVerified: now,
+              },
+            });
 
         return qaUser;
       }

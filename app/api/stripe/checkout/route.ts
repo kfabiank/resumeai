@@ -9,6 +9,18 @@ import {
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 
+function getStripeErrorMeta(error: any) {
+  return {
+    message: error?.message || 'Unknown Stripe error',
+    code: error?.code,
+    type: error?.type,
+    param: error?.param,
+    requestId: error?.requestId,
+    statusCode: error?.statusCode,
+    rawMessage: error?.raw?.message,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authSession = await getAuthSession();
@@ -111,6 +123,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL?.trim() || request.nextUrl.origin || 'http://localhost:3000';
+    const normalizedAppUrl = appUrl.replace(/\/$/, '');
+
     // Create Stripe Checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -122,8 +138,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
+      success_url: `${normalizedAppUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${normalizedAppUrl}/pricing?canceled=true`,
       metadata: {
         userId: user.id,
         plan: selectedPlan,
@@ -145,9 +161,23 @@ export async function POST(request: NextRequest) {
       url: checkoutSession.url,
     });
   } catch (error: any) {
-    console.error('Stripe checkout error:', error);
+    const meta = getStripeErrorMeta(error);
+    console.error('Stripe checkout error', meta);
+
+    const hint =
+      meta.code === 'resource_missing'
+        ? 'Price ID not found in current Stripe mode (test/live mismatch).'
+        : meta.code === 'parameter_invalid_empty'
+        ? 'Missing success/cancel URL or price configuration.'
+        : 'Check Stripe price IDs and API keys in .env.';
+
     return NextResponse.json(
-      { error: 'Failed to create checkout session', message: error.message },
+      {
+        error: 'Failed to create checkout session',
+        message: meta.message,
+        hint: process.env.NODE_ENV === 'development' ? hint : undefined,
+        stripe: process.env.NODE_ENV === 'development' ? meta : undefined,
+      },
       { status: 500 }
     );
   }

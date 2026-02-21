@@ -94,6 +94,7 @@ export default function AppTopNav({
     }
 
     return [
+      { key: "dashboard", href: "/", label: "Home" },
       { key: "templates", href: "/templates", label: "Templates" },
       { key: "pricing", href: "/pricing", label: "Pricing" },
     ] as const;
@@ -102,19 +103,19 @@ export default function AppTopNav({
   const linkClass = (key: AppTopNavProps["active"] | "dashboard" | "templates" | "tracker" | "pricing" | "cover-letter") =>
     `px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
       active === key
-        ? "text-blue-600 bg-blue-50"
-        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+        ? "bg-white/10 text-white"
+        : "text-slate-300 hover:text-white hover:bg-white/10"
     }`;
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/85 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href={brandHref} className="flex items-center space-x-3">
-            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/20">
+            <div className="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 p-2 shadow-lg shadow-blue-900/40">
               <FileText className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-xl font-bold text-transparent">
               ResumeAI
             </span>
           </Link>
@@ -138,13 +139,13 @@ export default function AppTopNav({
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="hidden sm:inline-flex rounded-lg px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                  className="hidden sm:inline-flex rounded-lg px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-white/10 hover:text-cyan-200"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/builder/new"
-                  className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="inline-flex items-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white hover:from-cyan-400 hover:to-blue-400"
                 >
                   Get Started
                 </Link>

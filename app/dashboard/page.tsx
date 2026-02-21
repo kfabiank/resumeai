@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { FileText, Plus, Download, Eye, Star, TrendingUp, Target, Clock, Loader2 } from "lucide-react";
+import { FileText, Plus, Download, Eye, Star, TrendingUp, Target, Clock, Loader2, Mail } from "lucide-react";
 import AppTopNav from "@/components/AppTopNav";
 
 type DashboardData = {
@@ -27,6 +27,12 @@ type DashboardData = {
     updatedAt: string;
     templateName: string;
     templateId: string;
+  }>;
+  coverLetters: Array<{
+    id: string;
+    company: string;
+    position: string;
+    createdAt: string;
   }>;
 };
 
@@ -102,7 +108,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { user, stats, resumes } = data;
+  const { user, stats, resumes, coverLetters } = data;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -247,6 +253,56 @@ export default function DashboardPage() {
                           Edit
                         </Link>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8 mt-6">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Cover Letters</h2>
+            <Link href="/cover-letter" className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all font-semibold text-sm shadow-sm hover:shadow-md">
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Cover Letter
+            </Link>
+          </div>
+
+          {!coverLetters || coverLetters.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-100 mb-6">
+                <Mail className="h-10 w-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">No cover letters yet</h3>
+              <p className="text-slate-600 mb-8 max-w-md mx-auto">Generate a personalized cover letter from any of your resumes</p>
+              <Link href="/cover-letter" className="inline-flex items-center bg-blue-600 text-white px-6 py-3.5 rounded-xl hover:bg-blue-700 transition-all font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform duration-200">
+                <Plus className="mr-2 h-5 w-5" />
+                Create Cover Letter
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {coverLetters.map((cl) => (
+                <div key={cl.id} className="border border-slate-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md hover:shadow-blue-50/50 transition-all duration-200 group">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                        {cl.position} — {cl.company}
+                      </h3>
+                      <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                        <Clock className="h-4 w-4" />
+                        {new Date(cl.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Link href="/cover-letter" className="p-2.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View">
+                        <Eye className="h-5 w-5" />
+                      </Link>
+                      <Link href="/cover-letter" className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all text-sm font-semibold shadow-sm hover:shadow-md">
+                        View
+                      </Link>
                     </div>
                   </div>
                 </div>

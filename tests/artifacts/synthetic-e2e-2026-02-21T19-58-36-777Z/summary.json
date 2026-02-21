@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-02-21T19:58:39.458Z",
+  "endedAt": "2026-02-21T19:59:11.250Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "headless": false,
+  "checkoutMode": "api-only",
+  "runs": [
+    {
+      "account": "qa-free@resumeai.local",
+      "plan": "free",
+      "ok": false,
+      "checkout": null,
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email')\u001b[22m\n"
+    },
+    {
+      "account": "qa-pro@resumeai.local",
+      "plan": "pro",
+      "ok": false,
+      "checkout": null,
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email')\u001b[22m\n"
+    },
+    {
+      "account": "qa-premium@resumeai.local",
+      "plan": "premium",
+      "ok": false,
+      "checkout": null,
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email')\u001b[22m\n"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-02-21T20:03:42.506Z",
+  "endedAt": "2026-02-21T20:04:03.972Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "headless": false,
+  "checkoutMode": "api-only",
+  "runs": [
+    {
+      "account": "qa-free@resumeai.local",
+      "plan": "free",
+      "ok": false,
+      "checkout": null,
+      "error": "page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    },
+    {
+      "account": "qa-pro@resumeai.local",
+      "plan": "pro",
+      "ok": false,
+      "checkout": null,
+      "error": "page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    },
+    {
+      "account": "qa-premium@resumeai.local",
+      "plan": "premium",
+      "ok": false,
+      "checkout": null,
+      "error": "page.waitForURL: Timeout 20000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    }
+  ]
+}

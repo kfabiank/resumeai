@@ -1,4 +1,4 @@
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import { getServerSession, type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -240,32 +240,37 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (!account || !user.email) return true;
 
-      // Allow OAuth accounts to link to existing users with the same email
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email },
-        include: { accounts: true },
-      });
+      try {
+        // Allow OAuth accounts to link to existing users with the same email
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          include: { accounts: true },
+        });
 
-      if (existingUser) {
-        const hasLinkedAccount = existingUser.accounts.some(
-          (a) => a.provider === account.provider
-        );
-        if (!hasLinkedAccount) {
-          await prisma.account.create({
-            data: {
-              userId: existingUser.id,
-              type: account.type,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-              access_token: account.access_token,
-              refresh_token: account.refresh_token,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-            },
-          });
+        if (existingUser) {
+          const hasLinkedAccount = existingUser.accounts.some(
+            (a) => a.provider === account.provider
+          );
+          if (!hasLinkedAccount) {
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                refresh_token: account.refresh_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              },
+            });
+          }
         }
+      } catch (error) {
+        // Do not block sign-in if account linking races with adapter writes.
+        console.error("OAuth account linking warning:", error);
       }
 
       return true;

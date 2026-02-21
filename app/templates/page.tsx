@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpDown, Check, Eye, Lock, Search, Sparkles, Star } from "lucide-react";
 import AppTopNav from "@/components/AppTopNav";
+import AppFooter from "@/components/AppFooter";
 import {
   isTemplateId,
   TEMPLATE_CATALOG,
@@ -343,6 +344,7 @@ export default function TemplatesPage() {
           </section>
         )}
       </main>
+      <AppFooter />
     </div>
   );
 }

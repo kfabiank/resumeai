@@ -69,11 +69,13 @@ export async function POST(request: NextRequest) {
 
   const currentUser = await prisma.user.findUnique({
     where: { id: userId },
-    select: { planType: true },
+    select: { planType: true, name: true, email: true },
   });
   if (!currentUser) {
     return NextResponse.json({ error: 'User not found' }, { status: 404, headers });
   }
+
+  const userProfile = await prisma.userProfile.findUnique({ where: { userId } });
   const canUseCoverLetters =
     PLAN_FEATURES[currentUser.planType as keyof typeof PLAN_FEATURES]?.coverLetters ?? false;
   if (!canUseCoverLetters) {
@@ -103,41 +105,75 @@ export async function POST(request: NextRequest) {
   }
 
   const content = (resume.content || {}) as ResumeContent;
-  const experienceForAI = (content.experiences || []).map((exp) => ({
-    title: exp.title || '',
-    company: exp.company || '',
-    location: exp.location || '',
-    startDate: exp.startDate || '',
-    endDate: exp.endDate || '',
-    current: !!exp.current,
-    description: (exp.optimizedBullets || []).join(' '),
-  }));
+
+  // Fallback chain: resume content → user profile → session
+  const profileExperiences = Array.isArray(userProfile?.experiences)
+    ? (userProfile.experiences as Array<{ title?: string; company?: string; location?: string; startDate?: string; endDate?: string; description?: string }>)
+    : [];
+  const profileEducation = Array.isArray(userProfile?.education)
+    ? (userProfile.education as Array<{ degree?: string; institution?: string; location?: string; graduationDate?: string; gpa?: string }>)
+    : [];
+  const profileSkills = Array.isArray(userProfile?.skills)
+    ? (userProfile.skills as string[])
+    : [];
+
+  const experienceForAI = (content.experiences?.length
+    ? content.experiences.map((exp) => ({
+        title: exp.title || '',
+        company: exp.company || '',
+        location: exp.location || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        current: !!exp.current,
+        description: (exp.optimizedBullets || []).join(' '),
+      }))
+    : profileExperiences.map((exp) => ({
+        title: exp.title || '',
+        company: exp.company || '',
+        location: exp.location || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        current: false,
+        description: exp.description || '',
+      }))
+  );
 
   const generatedContent = await generateCoverLetter(
     {
       jobDescription: body.jobDescription || resume.jobDescription || '',
       jobUrl: resume.jobUrl || undefined,
       personalInfo: {
-        name: content.personalInfo?.name || '',
-        email: content.personalInfo?.email || '',
-        phone: content.personalInfo?.phone || '',
-        location: content.personalInfo?.location || '',
-        linkedin: content.personalInfo?.linkedin || '',
-        portfolio: content.personalInfo?.portfolio || '',
-        headline: content.personalInfo?.headline || '',
+        name: content.personalInfo?.name || currentUser.name || '',
+        email: content.personalInfo?.email || currentUser.email || '',
+        phone: content.personalInfo?.phone || userProfile?.phone || '',
+        location: content.personalInfo?.location || userProfile?.location || '',
+        linkedin: content.personalInfo?.linkedin || userProfile?.linkedinUrl || '',
+        portfolio: content.personalInfo?.portfolio || userProfile?.portfolioUrl || '',
+        headline: content.personalInfo?.headline || userProfile?.headline || '',
       },
       experiences: experienceForAI,
-      education: (content.education || []).map((edu) => ({
-        degree: edu.degree || '',
-        institution: edu.institution || '',
-        location: edu.location || '',
-        graduationDate: edu.graduationDate || '',
-        gpa: edu.gpa || '',
-      })),
-      skills: [
-        ...(content.skills?.technical || []),
-        ...(content.skills?.soft || []),
-      ],
+      education: (content.education?.length
+        ? content.education.map((edu) => ({
+            degree: edu.degree || '',
+            institution: edu.institution || '',
+            location: edu.location || '',
+            graduationDate: edu.graduationDate || '',
+            gpa: edu.gpa || '',
+          }))
+        : profileEducation.map((edu) => ({
+            degree: edu.degree || '',
+            institution: edu.institution || '',
+            location: edu.location || '',
+            graduationDate: edu.graduationDate || '',
+            gpa: edu.gpa || '',
+          }))
+      ),
+      skills: (content.skills?.technical?.length || content.skills?.soft?.length)
+        ? [
+            ...(content.skills?.technical || []),
+            ...(content.skills?.soft || []),
+          ]
+        : profileSkills,
     },
     body.company.trim()
   );

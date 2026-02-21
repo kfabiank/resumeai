@@ -102,10 +102,17 @@ export default function ResumeEditorPage() {
         setUserPlan(data.user?.planType || "free");
         setAtsResult(runAtsScan(data.content));
 
-        const shareRes = await fetch(`/api/resume/${id}/share`, { cache: "no-store" });
+        const [shareRes, atsUsageRes] = await Promise.all([
+          fetch(`/api/resume/${id}/share`, { cache: "no-store" }),
+          fetch(`/api/resume/${id}/ats-scan`, { cache: "no-store" }),
+        ]);
         if (shareRes.ok) {
           const shareBody = await shareRes.json();
           setIsPublicResume(!!shareBody.isPublic);
+        }
+        if (atsUsageRes.ok) {
+          const atsBody = await atsUsageRes.json();
+          setAtsUsage(atsBody.usage || null);
         }
       } catch (error: any) {
         console.error("Failed to load resume:", error);

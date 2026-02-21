@@ -1,13 +1,9 @@
 import NextAuth from 'next-auth';
-import type { NextRequest } from 'next/server';
+import { authOptions } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function handler(request: NextRequest, context: { params: { nextauth: string[] } }) {
-  const { authOptions } = await import('@/lib/auth');
-  const nextAuthHandler = NextAuth(authOptions);
-  return nextAuthHandler(request, context);
-}
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

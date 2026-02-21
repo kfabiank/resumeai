@@ -38,7 +38,7 @@ export async function GET() {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const [resumes, resumesThisMonth, applications, interviews, avgAts] = await Promise.all([
+    const [resumes, resumesThisMonth, applications, interviews, avgAts, coverLetters] = await Promise.all([
       prisma.resume.findMany({
         where: { userId },
         include: {
@@ -60,6 +60,17 @@ export async function GET() {
       prisma.jobApplication.count({ where: { userId } }),
       prisma.jobApplication.count({ where: { userId, status: 'interview' } }),
       prisma.resume.aggregate({ where: { userId }, _avg: { atsScore: true } }),
+      prisma.coverLetter.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          company: true,
+          position: true,
+          createdAt: true,
+        },
+      }),
     ]);
 
     return NextResponse.json({
@@ -81,6 +92,12 @@ export async function GET() {
         updatedAt: r.updatedAt,
         templateName: r.template?.name || r.templateId,
         templateId: r.templateId,
+      })),
+      coverLetters: coverLetters.map((cl) => ({
+        id: cl.id,
+        company: cl.company,
+        position: cl.position,
+        createdAt: cl.createdAt,
       })),
     }, { headers: noStoreHeaders });
   } catch (error: any) {

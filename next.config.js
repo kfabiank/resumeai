@@ -14,8 +14,8 @@ const csp = [
   "font-src 'self' data: https:",
   "style-src 'self' 'unsafe-inline' https:",
   scriptSrc,
-  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://accounts.google.com https://oauth2.googleapis.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://accounts.google.com",
   "upgrade-insecure-requests",
 ].join("; ");
 
@@ -42,7 +42,7 @@ const securityHeaders = [
   },
   {
     key: "Cross-Origin-Opener-Policy",
-    value: "same-origin",
+    value: "same-origin-allow-popups",
   },
   {
     key: "Cross-Origin-Resource-Policy",
@@ -59,7 +59,8 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  distDir: isProduction ? ".next" : ".next-dev",
+  // Keep build artifacts in a dedicated local folder and allow overrides for CI/E2E.
+  distDir: process.env.NEXT_DIST_DIR || ".next-user",
   images: { domains: ["localhost"] },
   async headers() {
     return [

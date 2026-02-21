@@ -787,6 +787,62 @@ curl http://localhost:3000/api/tracker/reminders
 npm run db:reset:synthetic
 ```
 
+### Automation E2E (3 cuentas QA + datos sintéticos)
+
+Script de navegador para validar end-to-end con `qa-free`, `qa-pro`, `qa-premium` en paralelo:
+
+```bash
+# Requisitos:
+# 1) app corriendo en http://127.0.0.1:3000 (o E2E_BASE_URL)
+# 2) QA_TEST_PASSWORD definido en tu entorno
+# 3) Playwright instalado: npm i -D playwright && npx playwright install chromium
+
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:synthetic
+```
+
+Opciones útiles:
+
+```bash
+# Seed automático de QA users + synthetic data antes del run
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:synthetic -- --seed
+
+# Ver navegador (headed) o headless
+E2E_HEADLESS=1 QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:synthetic
+
+# Intentar abrir la página de Stripe Checkout (fake payment en modo test)
+E2E_OPEN_CHECKOUT=1 QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:synthetic
+```
+
+Artifacts:
+- Screenshots y `summary.json` en `tests/artifacts/synthetic-e2e-*/`
+
+### Automation E2E de pagos (usuarios nuevos + tarjeta 4242)
+
+Este flujo crea usuarios sintéticos nuevos (`synthetic-checkout-*`), inicia sesión, abre Stripe Checkout y paga con tarjeta de prueba `4242 4242 4242 4242`.
+
+```bash
+# Requisitos:
+# 1) App corriendo en http://127.0.0.1:3000
+# 2) QA_TEST_PASSWORD en entorno
+# 3) Stripe en modo test con price IDs configurados
+# 4) Webhook activo para reflejar estado local:
+npm run stripe:listen
+
+# Ejecutar checkout E2E (3 escenarios: pro mensual, premium mensual, pro anual)
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:checkout
+```
+
+Opcional:
+
+```bash
+# Headless
+E2E_HEADLESS=1 QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:checkout
+```
+
+Artifacts:
+- `tests/artifacts/synthetic-checkout-*/summary.json`
+- screenshots de success/error por escenario
+
 ---
 
 ## Estructura del Proyecto
@@ -869,3 +925,16 @@ prisma generate && npm run build
 - QA test users están limitados a `NODE_ENV !== 'production'`
 - Todos los endpoints CRUD validan ownership del recurso
 - Webhook de Stripe verifica signature con `STRIPE_WEBHOOK_SECRET`
+
+## Claude Commands
+
+
+| File | Command |
+
+|------|---------|
+
+| .claude/commands/test.md | /project:test |
+
+| .claude/commands/db-push.md | /project:db-push |
+
+| .claude/commands/audit-plans.md | /project:audit-plans |

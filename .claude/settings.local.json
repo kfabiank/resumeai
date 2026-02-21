@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/seed-batch2-templates.cjs:*)",
+      "Bash(node -e:*)",
+      "Bash(pkill:*)",
+      "Bash(chmod:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

@@ -1776,6 +1776,13 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(254 252 232 / var(--tw-bg-opacity, 1));
 }
+.bg-slate-950\/85 {
+  background-color: rgb(2 6 23 / 0.85);
+}
+.bg-slate-950 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(2 6 23 / var(--tw-bg-opacity, 1));
+}
 .bg-\[radial-gradient\(circle_at_30\%_20\%\2c rgba\(34\2c 211\2c 238\2c 0\.18\)\2c transparent_45\%\)\2c radial-gradient\(circle_at_80\%_0\%\2c rgba\(59\2c 130\2c 246\2c 0\.2\)\2c transparent_40\%\)\] {
   background-image: radial-gradient(circle at 30% 20%,rgba(34,211,238,0.18),transparent 45%),radial-gradient(circle at 80% 0%,rgba(59,130,246,0.2),transparent 40%);
 }
@@ -1976,6 +1983,14 @@ video {
 .fill-current {
   fill: currentColor;
 }
+.object-cover {
+  -o-object-fit: cover;
+     object-fit: cover;
+}
+.object-top {
+  -o-object-position: top;
+     object-position: top;
+}
 .p-0\.5 {
   padding: 0.125rem;
 }
@@ -2107,6 +2122,10 @@ video {
 .py-8 {
   padding-top: 2rem;
   padding-bottom: 2rem;
+}
+.py-24 {
+  padding-top: 6rem;
+  padding-bottom: 6rem;
 }
 .pb-20 {
   padding-bottom: 5rem;
@@ -3272,6 +3291,10 @@ video {
 
   .lg\:hidden {
     display: none;
+  }
+
+  .lg\:min-h-\[calc\(100vh-4rem\)\] {
+    min-height: calc(100vh - 4rem);
   }
 
   .lg\:grid-cols-2 {

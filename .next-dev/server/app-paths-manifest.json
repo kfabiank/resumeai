@@ -1,9 +1,12 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
+  "/api/resume/route": "app/api/resume/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/tracker/page": "app/tracker/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/api/dashboard/route": "app/api/dashboard/route.js",
-  "/admin/page": "app/admin/page.js",
-  "/api/admin/template-access/route": "app/api/admin/template-access/route.js",
+  "/api/cover-letter/route": "app/api/cover-letter/route.js",
+  "/api/profile/route": "app/api/profile/route.js",
+  "/cover-letter/page": "app/cover-letter/page.js",
+  "/templates/page": "app/templates/page.js",
+  "/pricing/page": "app/pricing/page.js",
   "/login/page": "app/login/page.js"
 }

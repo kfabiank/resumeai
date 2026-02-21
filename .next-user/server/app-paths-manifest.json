@@ -1,0 +1,11 @@
+{
+  "/cover-letter/page": "app/cover-letter/page.js",
+  "/tracker/page": "app/tracker/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/stripe/plans/route": "app/api/stripe/plans/route.js",
+  "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/api/stripe/checkout/route": "app/api/stripe/checkout/route.js",
+  "/templates/page": "app/templates/page.js",
+  "/login/page": "app/login/page.js"
+}

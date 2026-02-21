@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-02-21T20:05:47.077Z",
+  "endedAt": "2026-02-21T20:05:53.001Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "headless": false,
+  "checkoutMode": "api-only",
+  "runs": [
+    {
+      "account": "qa-free@resumeai.local",
+      "plan": "free",
+      "ok": true,
+      "checkout": {
+        "attempted": true,
+        "ok": true,
+        "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_test_a1dyMowBRstq3p4qEieuarggZgE7TxrbC8G3aWDku4JsNZAkQzoT8ETMSw#fidnandhYHdWcXxpYCc%2FJ2FgY2RwaXEnKSdkdWxOYHwnPyd1blpxYHZxWjA0UTVVSmo3SW5iXWhmXVRqc0thS3B2VXdcTDJqYXVqbDVNY1dpQD08MU5hZFZ1SjZNfVJfdENUMHIzbWFxX308RmhMTXRDPTEyXVZgX1NITXVxMF1%2FSmo0NTVJUTxUZzNPRycpJ2N3amhWYHdzYHcnP3F3cGApJ2dkZm5id2pwa2FGamlqdyc%2FJyZjY2NjY2MnKSdpZHxqcHFRfHVgJz8ndmxrYmlgWmxxYGgnKSdga2RnaWBVaWRmYG1qaWFgd3YnP3F3cGB4JSUl"
+      },
+      "error": null
+    },
+    {
+      "account": "qa-pro@resumeai.local",
+      "plan": "pro",
+      "ok": true,
+      "checkout": {
+        "attempted": false
+      },
+      "error": null
+    },
+    {
+      "account": "qa-premium@resumeai.local",
+      "plan": "premium",
+      "ok": true,
+      "checkout": {
+        "attempted": false
+      },
+      "error": null
+    }
+  ]
+}

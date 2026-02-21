@@ -5,10 +5,19 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 import AppTopNav from "@/components/AppTopNav";
+import AppFooter from "@/components/AppFooter";
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <AppTopNav authMode="auto" />
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+        <AppFooter />
+      </div>
+    }>
       <CheckoutSuccessContent />
     </Suspense>
   );
@@ -57,9 +66,13 @@ function CheckoutSuccessContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Confirming your subscription...</p>
+        <div className="w-full">
+          <AppTopNav authMode="auto" />
+          <div className="text-center py-24">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Confirming your subscription...</p>
+          </div>
+          <AppFooter />
         </div>
       </div>
     );
@@ -149,6 +162,7 @@ function CheckoutSuccessContent() {
           </p>
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AppTopNav from "@/components/AppTopNav";
+import AppFooter from "@/components/AppFooter";
 import {
   Check,
   X,
@@ -564,6 +565,7 @@ export default function PricingPage() {
           </Link>
         </div>
       </main>
+      <AppFooter />
     </div>
   );
 }

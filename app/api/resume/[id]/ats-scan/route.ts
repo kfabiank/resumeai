@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/auth";
 import { runAtsScan, type ResumeContent } from "@/lib/ats-scan";
 
-const FREE_ATS_SCAN_LIMIT = 10;
+const FREE_ATS_SCAN_LIMIT = 3;
 const FREE_ATS_SOFT_UPSELL_THRESHOLD = 2;
 
 function monthStartUtc() {
@@ -14,6 +14,58 @@ function monthStartUtc() {
 
 function contentHash(content: ResumeContent) {
   return createHash("sha256").update(JSON.stringify(content)).digest("hex");
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getAuthSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const resume = await prisma.resume.findUnique({
+      where: { id },
+      select: { userId: true, user: { select: { planType: true } } },
+    });
+
+    if (!resume || resume.userId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const planType = resume.user.planType || "free";
+    const isFree = planType === "free";
+    const startOfMonth = monthStartUtc();
+
+    const monthlyScanCount = await prisma.usageLog.count({
+      where: {
+        userId,
+        actionType: "ats_scan",
+        timestamp: { gte: startOfMonth },
+      },
+    });
+
+    const limit = isFree ? FREE_ATS_SCAN_LIMIT : -1;
+    const remaining = limit === -1 ? -1 : Math.max(0, limit - monthlyScanCount);
+
+    return NextResponse.json({
+      usage: {
+        used: monthlyScanCount,
+        limit,
+        remaining,
+        softUpsellThreshold: FREE_ATS_SOFT_UPSELL_THRESHOLD,
+        softUpsell: isFree && monthlyScanCount >= FREE_ATS_SOFT_UPSELL_THRESHOLD && remaining > 0,
+        blocked: isFree && monthlyScanCount >= FREE_ATS_SCAN_LIMIT,
+      },
+    });
+  } catch (error: any) {
+    console.error("ATS usage GET error:", error);
+    return NextResponse.json({ error: "Failed to fetch usage" }, { status: 500 });
+  }
 }
 
 export async function POST(

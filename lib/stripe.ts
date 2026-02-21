@@ -37,7 +37,7 @@ export const PLANS = {
       'Everything in Pro',
       'Custom branding',
       'LinkedIn optimization',
-      '1-on-1 resume review',
+      // '1-on-1 resume review',
       'Interview prep tips',
     ],
   },

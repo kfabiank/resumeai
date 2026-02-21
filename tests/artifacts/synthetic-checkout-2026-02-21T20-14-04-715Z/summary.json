@@ -1,0 +1,31 @@
+{
+  "baseUrl": "http://127.0.0.1:3000",
+  "headless": false,
+  "results": [
+    {
+      "email": "synthetic-checkout-pro-monthly-1771704846052@synthetic.resumeai.local",
+      "scenario": "pro-monthly",
+      "targetPlan": "pro",
+      "billingPeriod": "monthly",
+      "ok": false,
+      "error": "page.waitForURL: Timeout 90000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    },
+    {
+      "email": "synthetic-checkout-premium-monthly-1771704846052@synthetic.resumeai.local",
+      "scenario": "premium-monthly",
+      "targetPlan": "premium",
+      "billingPeriod": "monthly",
+      "ok": false,
+      "error": "page.waitForURL: Timeout 90000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    },
+    {
+      "email": "synthetic-checkout-pro-annual-1771704846052@synthetic.resumeai.local",
+      "scenario": "pro-annual",
+      "targetPlan": "pro",
+      "billingPeriod": "annual",
+      "ok": false,
+      "error": "page.waitForURL: Timeout 90000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation until \"load\"\n============================================================"
+    }
+  ],
+  "generatedAt": "2026-02-21T20:15:45.570Z"
+}

@@ -155,9 +155,26 @@ async function fillStripeCheckout(page) {
 
   assert(cardFilled, "No se encontro formulario de tarjeta en Stripe Checkout");
 
+  const cardholderInput = page.locator(
+    'input[name="name"], input[autocomplete="cc-name"], input[placeholder*="name" i]'
+  );
+  if (await cardholderInput.count()) {
+    await cardholderInput.first().fill("Synthetic QA User");
+  }
+
   const payButton = page.getByRole("button", {
     name: /Pay|Subscribe|Start subscription|Iniciar|Pagar/i,
   });
+  await page.waitForFunction(
+    () => {
+      const candidates = Array.from(document.querySelectorAll("button"));
+      const btn = candidates.find((b) =>
+        /(Pay|Subscribe|Start subscription|Iniciar|Pagar)/i.test(b.textContent || "")
+      );
+      return Boolean(btn && !btn.hasAttribute("disabled"));
+    },
+    { timeout: 20000 }
+  );
   await payButton.first().click();
 }
 

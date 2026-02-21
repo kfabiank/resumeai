@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-02-21T20:25:41.115Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "headless": false,
+  "results": [
+    {
+      "account": "qa-free@resumeai.local",
+      "plan": "free",
+      "ok": false,
+      "steps": [
+        {
+          "name": "login",
+          "ok": true,
+          "details": ""
+        }
+      ],
+      "error": "Plan inesperado: pro (esperado free)"
+    },
+    {
+      "account": "qa-pro@resumeai.local",
+      "plan": "pro",
+      "ok": false,
+      "steps": [
+        {
+          "name": "login",
+          "ok": true,
+          "details": ""
+        }
+      ],
+      "error": "Plan inesperado: free (esperado pro)"
+    },
+    {
+      "account": "qa-premium@resumeai.local",
+      "plan": "premium",
+      "ok": true,
+      "steps": [
+        {
+          "name": "login",
+          "ok": true,
+          "details": ""
+        },
+        {
+          "name": "profile",
+          "ok": true,
+          "details": "plan=premium"
+        },
+        {
+          "name": "dashboard",
+          "ok": true,
+          "details": ""
+        },
+        {
+          "name": "template-access",
+          "ok": true,
+          "details": "allowed=25"
+        },
+        {
+          "name": "tracker-create",
+          "ok": true,
+          "details": ""
+        },
+        {
+          "name": "resume-generate",
+          "ok": true,
+          "details": "resumeId=cmlwrq99e001k344mqeql33q2"
+        },
+        {
+          "name": "resume-fetch",
+          "ok": true,
+          "details": ""
+        },
+        {
+          "name": "ats-scan",
+          "ok": true,
+          "details": "score=100"
+        },
+        {
+          "name": "cover-letter-create",
+          "ok": true,
+          "details": "letterId=cmlwrqgaw001p344muw3mnp8j"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

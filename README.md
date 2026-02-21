@@ -843,6 +843,29 @@ Artifacts:
 - `tests/artifacts/synthetic-checkout-*/summary.json`
 - screenshots de success/error por escenario
 
+### Split en 2 partes (como pipeline)
+
+Parte 1: login + checkout completo con pago test (4242) y upgrade de plan
+```bash
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:part1
+```
+
+Parte 2: capacidades por plan (free/pro/premium):
+- login
+- dashboard/template-access
+- tracker create
+- resume generation
+- ATS scan
+- cover letter (bloqueado en free, habilitado en pro/premium)
+```bash
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:part2
+```
+
+Si quieres resembrar datos antes de parte 2:
+```bash
+QA_TEST_PASSWORD="tu-pass-qa" npm run test:e2e:part2 -- --seed
+```
+
 ---
 
 ## Estructura del Proyecto

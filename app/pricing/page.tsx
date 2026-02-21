@@ -36,7 +36,7 @@ const features: PlanFeature[] = [
   { name: "Custom Branding", free: false, pro: false, premium: true },
   { name: "LinkedIn Optimization", free: false, pro: false, premium: true },
   { name: "Priority Support", free: false, pro: true, premium: true },
-  { name: "1-on-1 Resume Review", free: false, pro: false, premium: true },
+  // { name: "1-on-1 Resume Review", free: false, pro: false, premium: true },
 ];
 
 const faqs = [

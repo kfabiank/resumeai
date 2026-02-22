@@ -115,6 +115,9 @@ export default function StyledPdfDownloadButton({ resumeId, fallbackName, classN
       clonedNode.style.left = "0";
       clonedNode.style.top = "0";
       clonedNode.style.opacity = "1";
+      clonedNode.style.visibility = "visible";
+      clonedNode.style.display = "block";
+      clonedNode.style.transform = "none";
       clonedNode.style.pointerEvents = "none";
 
       sandbox.appendChild(clonedNode);
@@ -125,29 +128,89 @@ export default function StyledPdfDownloadButton({ resumeId, fallbackName, classN
         import("jspdf"),
       ]);
 
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        selection.removeAllRanges();
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      const isCanvasBlank = (target: HTMLCanvasElement) => {
+        if (!target.width || !target.height) return true;
+        const ctx = target.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return true;
+        const sampleGrid = 12;
+        const stepX = Math.max(1, Math.floor(target.width / sampleGrid));
+        const stepY = Math.max(1, Math.floor(target.height / sampleGrid));
+        for (let y = 0; y < target.height; y += stepY) {
+          for (let x = 0; x < target.width; x += stepX) {
+            const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data;
+            const isTransparent = a === 0;
+            const isWhite = r > 245 && g > 245 && b > 245;
+            if (!isTransparent && !isWhite) {
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+      const baseCanvasOptions = {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: clonedNode.scrollWidth,
+        windowHeight: clonedNode.scrollHeight,
+        onclone: (clonedDoc: Document) => {
+          clonedDoc.getSelection()?.removeAllRanges();
+          const style = clonedDoc.createElement("style");
+          style.textContent = `
+            * { animation: none !important; transition: none !important; caret-color: transparent !important; }
+            * , *::before, *::after {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            ::selection { background: transparent !important; color: inherit !important; }
+            [data-template-id="tech-minimal"] span,
+            [data-template-id="startup-modern"] span {
+              line-height: 1.1 !important;
+            }
+            [data-template-id="tech-minimal"] section:nth-of-type(3) span {
+              display: inline-block !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        },
+      };
+
       let canvas: HTMLCanvasElement;
       try {
         canvas = await html2canvas(clonedNode, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: clonedNode.scrollWidth,
-          windowHeight: clonedNode.scrollHeight,
+          ...baseCanvasOptions,
           foreignObjectRendering: true,
         });
+        if (isCanvasBlank(canvas)) {
+          canvas = await html2canvas(clonedNode, {
+            ...baseCanvasOptions,
+            foreignObjectRendering: false,
+          });
+        }
       } catch {
         canvas = await html2canvas(clonedNode, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: clonedNode.scrollWidth,
-          windowHeight: clonedNode.scrollHeight,
+          ...baseCanvasOptions,
           foreignObjectRendering: false,
         });
       }
       sandbox.remove();
+
+      if (isCanvasBlank(canvas)) {
+        throw new Error("The PDF canvas rendered blank.");
+      }
 
       const pdf = new JsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();

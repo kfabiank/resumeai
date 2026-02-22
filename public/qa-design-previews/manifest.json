@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-02-21T21:38:21.380Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "templates": [
+    {
+      "id": "modern-professional",
+      "file": "/qa-design-previews/modern-professional.png"
+    },
+    {
+      "id": "tech-minimal",
+      "file": "/qa-design-previews/tech-minimal.png"
+    },
+    {
+      "id": "executive-classic",
+      "file": "/qa-design-previews/executive-classic.png"
+    },
+    {
+      "id": "creative-bold",
+      "file": "/qa-design-previews/creative-bold.png"
+    },
+    {
+      "id": "simple-clean",
+      "file": "/qa-design-previews/simple-clean.png"
+    },
+    {
+      "id": "startup-modern",
+      "file": "/qa-design-previews/startup-modern.png"
+    },
+    {
+      "id": "consultant-pro",
+      "file": "/qa-design-previews/consultant-pro.png"
+    },
+    {
+      "id": "academic-formal",
+      "file": "/qa-design-previews/academic-formal.png"
+    },
+    {
+      "id": "accountant-template",
+      "file": "/qa-design-previews/accountant-template.png"
+    },
+    {
+      "id": "consultant-template",
+      "file": "/qa-design-previews/consultant-template.png"
+    },
+    {
+      "id": "data-science-template",
+      "file": "/qa-design-previews/data-science-template.png"
+    },
+    {
+      "id": "devops-template",
+      "file": "/qa-design-previews/devops-template.png"
+    },
+    {
+      "id": "finance-template",
+      "file": "/qa-design-previews/finance-template.png"
+    },
+    {
+      "id": "frontend-template",
+      "file": "/qa-design-previews/frontend-template.png"
+    },
+    {
+      "id": "legal-template",
+      "file": "/qa-design-previews/legal-template.png"
+    },
+    {
+      "id": "marketing-template",
+      "file": "/qa-design-previews/marketing-template.png"
+    },
+    {
+      "id": "medical-template",
+      "file": "/qa-design-previews/medical-template.png"
+    },
+    {
+      "id": "nurse-template",
+      "file": "/qa-design-previews/nurse-template.png"
+    },
+    {
+      "id": "paralegal-template",
+      "file": "/qa-design-previews/paralegal-template.png"
+    },
+    {
+      "id": "product-manager-template",
+      "file": "/qa-design-previews/product-manager-template.png"
+    },
+    {
+      "id": "sales-template",
+      "file": "/qa-design-previews/sales-template.png"
+    },
+    {
+      "id": "startup-template",
+      "file": "/qa-design-previews/startup-template.png"
+    },
+    {
+      "id": "ux-designer-template",
+      "file": "/qa-design-previews/ux-designer-template.png"
+    },
+    {
+      "id": "boardroom-template",
+      "file": "/qa-design-previews/boardroom-template.png"
+    },
+    {
+      "id": "impact-template",
+      "file": "/qa-design-previews/impact-template.png"
+    }
+  ]
+}

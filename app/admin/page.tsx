@@ -1,8 +1,15 @@
 import { redirect } from "next/navigation";
+import { access } from "node:fs/promises";
+import path from "node:path";
 import { getAuthSession } from "@/lib/auth";
 import AdminSwitcher from "./AdminSwitcher";
 import { prisma } from "@/lib/prisma";
 import TemplateAccessManager from "./TemplateAccessManager";
+import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
+import AdminQABulkDownloads from "./AdminQABulkDownloads";
+import AdminScriptsPanel from "./AdminScriptsPanel";
+import { ADMIN_CUSTOM_SCRIPTS } from "@/lib/admin-custom-scripts";
+import StyledPdfDownloadButton from "./StyledPdfDownloadButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,10 +38,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     redirect("/dashboard");
   }
 
+  const adminUserId = session.user.id;
   const query = searchParams?.q?.trim() || "";
   const selectedUserId = searchParams?.userId?.trim() || null;
 
-  const [totalUsers, totalResumes, totalApplications, totalCoverLetters, users] = await Promise.all([
+  const [
+    totalUsers,
+    totalResumes,
+    totalApplications,
+    totalCoverLetters,
+    users,
+    qaPreviewResumes,
+  ] = await Promise.all([
     prisma.user.count(),
     prisma.resume.count(),
     prisma.jobApplication.count(),
@@ -58,6 +73,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             usageLogs: true,
           },
         },
+      },
+    }),
+    prisma.resume.findMany({
+      where: {
+        userId: adminUserId,
+        title: { startsWith: "QA Preview - " },
+      },
+      select: {
+        id: true,
+        templateId: true,
+        title: true,
+        updatedAt: true,
       },
     }),
   ]);
@@ -102,6 +129,35 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       })
     : null;
 
+  const resumeByTemplateId = new Map(qaPreviewResumes.map((resume) => [resume.templateId, resume]));
+
+  const qaPreviewStatuses = await Promise.all(
+    TEMPLATE_CATALOG.map(async (template) => {
+      const localPath = path.join(process.cwd(), "public", "qa-design-previews", `${template.id}.png`);
+      let pngExists = false;
+      try {
+        await access(localPath);
+        pngExists = true;
+      } catch {
+        pngExists = false;
+      }
+      return {
+        id: template.id,
+        name: template.name,
+        categoryLabel: template.categoryLabel,
+        pngExists,
+        resume: resumeByTemplateId.get(template.id) || null,
+        file: `/qa-design-previews/${template.id}.png`,
+      };
+    })
+  );
+
+  const qaBulkItems = qaPreviewStatuses.map((item) => ({
+    id: item.id,
+    pngFile: item.pngExists ? item.file : null,
+    resumeId: item.resume?.id || null,
+  }));
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -136,7 +192,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 px-4 py-3">
               <h2 className="font-semibold text-slate-900">Users ({users.length})</h2>
             </div>
@@ -210,7 +266,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <h2 className="mb-3 font-semibold text-slate-900">
                 Resumes ({selectedUser?._count.resumes || 0})
               </h2>
-              <div className="space-y-2 max-h-64 overflow-auto">
+              <div className="max-h-64 space-y-2 overflow-auto">
                 {selectedUser?.resumes.length ? (
                   selectedUser.resumes.map((resume) => (
                     <div key={resume.id} className="rounded-lg border border-slate-200 p-3">
@@ -230,12 +286,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <h2 className="mb-3 font-semibold text-slate-900">
                 Applications ({selectedUser?._count.applications || 0})
               </h2>
-              <div className="space-y-2 max-h-64 overflow-auto">
+              <div className="max-h-64 space-y-2 overflow-auto">
                 {selectedUser?.applications.length ? (
                   selectedUser.applications.map((item) => (
                     <div key={item.id} className="rounded-lg border border-slate-200 p-3">
                       <p className="text-sm font-medium text-slate-900">{item.company} - {item.position}</p>
-                      <p className="text-xs text-slate-600 capitalize">Status: {item.status.replaceAll("_", " ")}</p>
+                      <p className="text-xs capitalize text-slate-600">Status: {item.status.replaceAll("_", " ")}</p>
                       <p className="text-xs text-slate-500">Updated: {formatDate(item.updatedAt)}</p>
                     </div>
                   ))
@@ -248,6 +304,83 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </section>
 
         <TemplateAccessManager />
+        <AdminScriptsPanel scripts={ADMIN_CUSTOM_SCRIPTS} />
+
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-semibold text-slate-900">Template QA Design Previews</h2>
+              <p className="text-xs text-slate-600">
+                1) Generate PNG previews: <code className="ml-1 rounded bg-slate-100 px-1.5 py-0.5">npm run templates:qa-previews</code>
+              </p>
+              <p className="text-xs text-slate-600">
+                2) Generate resume records for PDF/DOCX export: <code className="ml-1 rounded bg-slate-100 px-1.5 py-0.5">npm run templates:qa-resumes</code>
+              </p>
+            </div>
+          </div>
+          <AdminQABulkDownloads items={qaBulkItems} />
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {qaPreviewStatuses.map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-3">
+                <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                <p className="text-xs text-slate-500">{item.categoryLabel}</p>
+
+                <p className={`mt-2 text-xs font-medium ${item.pngExists ? "text-emerald-600" : "text-amber-600"}`}>
+                  PNG: {item.pngExists ? "Generated" : "Missing"}
+                </p>
+                <p className={`text-xs font-medium ${item.resume ? "text-emerald-600" : "text-amber-600"}`}>
+                  PDF/DOCX record: {item.resume ? "Ready" : "Missing"}
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {item.resume ? (
+                    <>
+                      <StyledPdfDownloadButton resumeId={item.resume.id} fallbackName={item.id} />
+                      <form method="POST" action={`/api/resume/${item.resume.id}/export-docx`} target="_blank">
+                        <button
+                          type="submit"
+                          className="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900"
+                        >
+                          Download DOCX
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <>
+                      <span className="cursor-not-allowed rounded-md bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                        Download PDF
+                      </span>
+                      <span className="cursor-not-allowed rounded-md bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                        Download DOCX
+                      </span>
+                    </>
+                  )}
+
+                  {item.pngExists ? (
+                    <a
+                      href={item.file}
+                      download={`${item.id}.png`}
+                      className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                    >
+                      Download PNG
+                    </a>
+                  ) : (
+                    <span className="cursor-not-allowed rounded-md bg-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                      Download PNG
+                    </span>
+                  )}
+                </div>
+
+                {item.resume ? (
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    Resume ID: {item.resume.id} · Updated: {formatDate(item.resume.updatedAt)}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
 
         <AdminSwitcher adminEmail={session.user.email || "admin"} />
       </div>

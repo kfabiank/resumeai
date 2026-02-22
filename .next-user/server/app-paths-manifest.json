@@ -1,11 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/api/profile/route": "app/api/profile/route.js",
-  "/api/stripe/plans/route": "app/api/stripe/plans/route.js",
-  "/terms/page": "app/terms/page.js",
-  "/privacy/page": "app/privacy/page.js",
-  "/api/template-access/route": "app/api/template-access/route.js",
-  "/pricing/page": "app/pricing/page.js",
-  "/login/page": "app/login/page.js",
-  "/templates/page": "app/templates/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/tracker/page": "app/tracker/page.js",
+  "/api/admin/template-access/route": "app/api/admin/template-access/route.js",
+  "/api/resume/[id]/route": "app/api/resume/[id]/route.js",
+  "/templates/page": "app/templates/page.js",
+  "/login/page": "app/login/page.js"
 }

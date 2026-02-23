@@ -1,9 +1,39 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
 import { prisma } from "@/lib/prisma";
 import { mapResumeContentToResumeData } from "@/lib/resume-render";
+import { siteName } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const resume = await prisma.resume.findUnique({
+    where: { id },
+    select: { title: true, isPublic: true },
+  });
+
+  if (!resume?.isPublic) return {};
+
+  const title = resume.title || "Shared Resume";
+  const description = `View ${title} — built with ${siteName}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+    },
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function SharedResumePage({
   params,

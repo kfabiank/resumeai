@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === "production";
 const scriptSrc = isProduction
@@ -60,7 +62,19 @@ const securityHeaders = [
 
 const nextConfig = {
   // Keep build artifacts in a dedicated local folder and allow overrides for CI/E2E.
-  distDir: process.env.NEXT_DIST_DIR || ".next-user",
+  // Fallback to writable dirs when previous build folders were created by a different user.
+  distDir: (() => {
+    if (process.env.NEXT_DIST_DIR) return process.env.NEXT_DIST_DIR;
+    const candidates = [".next-user", ".next-codex", ".next-local-build"];
+    for (const dir of candidates) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.accessSync(dir, fs.constants.W_OK);
+        return dir;
+      } catch {}
+    }
+    return ".next";
+  })(),
   images: { domains: ["localhost"] },
   async headers() {
     return [

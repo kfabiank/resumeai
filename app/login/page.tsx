@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getProviders, signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { Mail, Lock, ArrowRight, FileText, TrendingUp, Sparkles } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Lock, ArrowRight, TrendingUp, Sparkles } from 'lucide-react';
 
 type ProviderMap = Awaited<ReturnType<typeof getProviders>>;
 
@@ -169,10 +170,13 @@ export default function LoginPage() {
 
         <div className="relative z-10 my-auto max-w-xl text-white">
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
-              <FileText className="h-6 w-6" />
-            </div>
-            <span className="text-3xl font-bold tracking-tight">ResumeAI</span>
+            <Image
+              src="/logo-b-neural-dark.svg"
+              alt="Resuify"
+              width={180}
+              height={42}
+              className="h-[3.25rem] w-auto"
+            />
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight">
@@ -214,10 +218,13 @@ export default function LoginPage() {
         <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
           <div className="mb-8 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <FileText className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-bold text-slate-900">ResumeAI</span>
+              <Image
+                src="/logo-b-neural.svg"
+                alt="Resuify"
+                width={150}
+                height={34}
+                className="h-12 w-auto"
+              />
             </Link>
             <p className="text-sm text-slate-500 lg:ml-auto">Secure sign in</p>
           </div>

@@ -43,8 +43,13 @@ export default function UserNavMenu({
           isDark ? "hover:bg-white/10" : "hover:bg-slate-100"
         }`}
       >
-        <div className="text-right hidden sm:block">
-          <p className={`text-sm font-medium ${isDark ? "text-white" : "text-slate-900"}`}>
+        <div className="text-right hidden sm:block min-w-0">
+          <p
+            className={`text-sm font-medium truncate max-w-[10.5rem] ${
+              isDark ? "text-white" : "text-slate-900"
+            }`}
+            title={displayName}
+          >
             {displayName}
           </p>
           <p className={`text-xs capitalize ${isDark ? "text-slate-300" : "text-slate-500"}`}>

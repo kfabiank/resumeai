@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/seo";
+import { TEMPLATE_CATALOG } from "@/lib/template-catalog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -41,5 +42,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.3,
     },
+    ...TEMPLATE_CATALOG.map((t) => ({
+      url: `${siteUrl}/templates?template=${t.id}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
   ];
 }

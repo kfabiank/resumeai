@@ -35,10 +35,11 @@ export const PLANS = {
     },
     features: [
       'Everything in Pro',
-      'Custom branding',
-      'LinkedIn optimization',
-      // '1-on-1 resume review',
-      'Interview prep tips',
+      'AI Resume Rewrite Pro',
+      'AI Job Match Scoring',
+      'AI Interview Simulation',
+      'AI Salary Negotiation Scripts',
+      'Advanced ATS strategy recommendations',
     ],
   },
 } as const;

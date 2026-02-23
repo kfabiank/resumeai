@@ -7,6 +7,9 @@ interface Props {
 
 const UXDesignerTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-10" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -74,7 +77,15 @@ const UXDesignerTemplate = ({ data }: Props) => {
             </div>
           ))}
           <h2 className="mb-1 mt-3 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: "#e11d48" }}>Strengths</h2>
-          <p className="text-xs" style={{ color: "#64748b" }}>{skills.soft.join(", ")}</p>
+          <p className="text-xs" style={{ color: "#64748b" }}>{skills.soft.join(" · ")}</p>
+          {languages.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Languages</p>
+              <p className="mt-1 text-xs" style={{ color: "#64748b" }}>
+                {languages.join(" · ")}
+              </p>
+            </div>
+          )}
         </section>
       </div>
     </div>

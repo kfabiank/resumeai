@@ -7,11 +7,22 @@ interface Props {
 
 const ImpactTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
-    <div className="a4-page" style={{ fontFamily: "'Inter', sans-serif", background: "#f8fafc" }}>
-      <div className="grid grid-cols-[205px_1fr] min-h-full">
-        <aside className="p-6" style={{ background: "#0f172a", color: "#dbeafe" }}>
+    <div
+      className="a4-page impact-layout sidebar-rail-template"
+      style={{
+        ["--left-rail-width" as any]: "205px",
+        ["--left-rail-color" as any]: "#0f172a",
+        fontFamily: "'Inter', sans-serif",
+        background: "linear-gradient(to right, #0f172a 0, #0f172a 205px, #f8fafc 205px, #f8fafc 100%)",
+      }}
+    >
+      <div className="min-h-[1123px]">
+        <aside className="float-left w-[205px] p-6" data-left-rail style={{ color: "#dbeafe" }}>
           <h1 className="text-xl font-bold leading-tight text-white">{personalInfo.name}</h1>
           <p className="mt-1 text-xs uppercase tracking-[0.14em]" style={{ color: "#60a5fa" }}>
             {personalInfo.headline}
@@ -57,9 +68,24 @@ const ImpactTemplate = ({ data }: Props) => {
               ))}
             </ul>
           </section>
+          {languages.length > 0 && (
+            <section className="mt-5">
+              <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#93c5fd" }}>
+                Languages
+              </h2>
+              <ul className="space-y-1">
+                {languages.map((language, i) => (
+                  <li key={i} className="text-xs" style={{ color: "#bfdbfe" }}>
+                    {language}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
         </aside>
 
-        <main className="p-7">
+        <main className="ml-[205px] p-7">
           <section className="mb-5 rounded-lg border border-blue-100 bg-white px-4 py-3">
             <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#1d4ed8" }}>
               Professional Summary
@@ -117,7 +143,9 @@ const ImpactTemplate = ({ data }: Props) => {
               </div>
             ))}
           </section>
+
         </main>
+        <div className="clear-both" />
       </div>
     </div>
   );

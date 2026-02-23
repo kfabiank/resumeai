@@ -32,6 +32,7 @@
     "ui:migrate:lovable": "node scripts/migrate-lovable-ui.cjs",
     "templates:import": "node scripts/import-templates.cjs",
     "templates:seed-batch2": "node scripts/seed-batch2-templates.cjs",
+    "templates:seed-batch3": "node scripts/seed-batch3-templates.cjs",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
     "postinstall": "prisma generate"
   },

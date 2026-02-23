@@ -1,9 +1,0 @@
-{
-  "/dashboard/page": "app/dashboard/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/tracker/page": "app/tracker/page.js",
-  "/api/admin/template-access/route": "app/api/admin/template-access/route.js",
-  "/api/resume/[id]/route": "app/api/resume/[id]/route.js",
-  "/templates/page": "app/templates/page.js",
-  "/login/page": "app/login/page.js"
-}

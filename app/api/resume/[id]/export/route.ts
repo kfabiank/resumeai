@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import jsPDF from 'jspdf';
+import { buildResumeDownloadName } from '@/lib/resume-render';
 
 export async function POST(
   request: NextRequest,
@@ -135,7 +136,7 @@ export async function POST(
       },
     });
 
-    const fileName = `${resume.title || 'resume'}`.replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'resume';
+    const fileName = buildResumeDownloadName(content?.personalInfo?.name, resume.title || 'resume');
     const pdfArrayBuffer = doc.output('arraybuffer');
 
     return new NextResponse(pdfArrayBuffer, {

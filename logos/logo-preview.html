@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resuify — Logo Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-600: #2563EB;
+    --blue-700: #1D4ED8;
+    --blue-400: #60A5FA;
+    --blue-100: #DBEAFE;
+    --slate-900: #0F172A;
+    --slate-700: #334155;
+    --slate-400: #94A3B8;
+    --slate-100: #F1F5F9;
+    --white: #FFFFFF;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--slate-100);
+    color: var(--slate-900);
+    padding: 48px 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate-400);
+    margin-bottom: 40px;
+  }
+
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate-400);
+    margin-bottom: 16px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 8px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .card.dark {
+    background: var(--slate-900);
+  }
+
+  .card.blue {
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  }
+
+  .logo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-item span {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--slate-400);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .logo-item.dark span { color: #64748B; }
+  .logo-item.on-dark span { color: rgba(255,255,255,0.4); }
+
+  /* Header mockup */
+  .header-mock {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 760px;
+  }
+
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  .header-nav {
+    display: flex;
+    gap: 24px;
+  }
+
+  .header-nav a {
+    font-size: 14px;
+    color: var(--slate-700);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .header-cta {
+    background: var(--blue-600);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .hero-area {
+    padding: 32px 24px 24px;
+    text-align: center;
+  }
+
+  .hero-area h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 8px;
+  }
+
+  .hero-area p {
+    font-size: 14px;
+    color: var(--slate-400);
+  }
+
+  /* Favicon grid */
+  .favicon-grid {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .favicon-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .favicon-wrap span {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--slate-400);
+  }
+
+  /* Color swatches */
+  .swatches {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .swatch {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .swatch-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--slate-400);
+    text-align: center;
+    margin-top: 6px;
+  }
+
+  .swatch-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Resuify — Brand Identity</h1>
+
+<!-- HORIZONTAL LOGO -->
+<div class="section">
+  <div class="section-label">Logo — Light Background</div>
+  <div class="card">
+    <div class="logo-item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" fill="none">
+        <defs>
+          <linearGradient id="docGrad1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2563EB"/>
+            <stop offset="100%" stop-color="#1D4ED8"/>
+          </linearGradient>
+          <linearGradient id="checkGrad1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60A5FA"/>
+            <stop offset="100%" stop-color="#93C5FD"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="32" height="40" rx="4" fill="url(#docGrad1)"/>
+        <path d="M28 4 L36 12 L28 12 Z" fill="#1E40AF" opacity="0.6"/>
+        <rect x="10" y="17" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
+        <rect x="10" y="22" width="12" height="2" rx="1" fill="white" opacity="0.6"/>
+        <rect x="10" y="27" width="14" height="2" rx="1" fill="white" opacity="0.6"/>
+        <circle cx="30" cy="36" r="8" fill="white"/>
+        <circle cx="30" cy="36" r="7" fill="url(#checkGrad1)"/>
+        <path d="M26.5 36 L29 38.5 L33.5 33.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="46" y="31" font-family="'DM Sans', 'Helvetica Neue', sans-serif" font-size="20" font-weight="700" letter-spacing="-0.5" fill="#0F172A">Resu<tspan fill="#2563EB">ify</tspan></text>
+      </svg>
+      <span>200×48 · header</span>
+    </div>
+
+    <div class="logo-item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="160" height="38" fill="none">
+        <defs>
+          <linearGradient id="docGrad2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2563EB"/>
+            <stop offset="100%" stop-color="#1D4ED8"/>
+          </linearGradient>
+          <linearGradient id="checkGrad2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60A5FA"/>
+            <stop offset="100%" stop-color="#93C5FD"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="32" height="40" rx="4" fill="url(#docGrad2)"/>
+        <path d="M28 4 L36 12 L28 12 Z" fill="#1E40AF" opacity="0.6"/>
+        <rect x="10" y="17" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
+        <rect x="10" y="22" width="12" height="2" rx="1" fill="white" opacity="0.6"/>
+        <rect x="10" y="27" width="14" height="2" rx="1" fill="white" opacity="0.6"/>
+        <circle cx="30" cy="36" r="8" fill="white"/>
+        <circle cx="30" cy="36" r="7" fill="url(#checkGrad2)"/>
+        <path d="M26.5 36 L29 38.5 L33.5 33.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="46" y="31" font-family="'DM Sans', 'Helvetica Neue', sans-serif" font-size="20" font-weight="700" letter-spacing="-0.5" fill="#0F172A">Resu<tspan fill="#2563EB">ify</tspan></text>
+      </svg>
+      <span>160×38 · compact</span>
+    </div>
+  </div>
+</div>
+
+<!-- DARK BG -->
+<div class="section">
+  <div class="section-label">Logo — Dark Background</div>
+  <div class="card dark">
+    <div class="logo-item on-dark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" fill="none">
+        <defs>
+          <linearGradient id="docGrad3" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#3B82F6"/>
+            <stop offset="100%" stop-color="#2563EB"/>
+          </linearGradient>
+          <linearGradient id="checkGrad3" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60A5FA"/>
+            <stop offset="100%" stop-color="#93C5FD"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="32" height="40" rx="4" fill="url(#docGrad3)"/>
+        <path d="M28 4 L36 12 L28 12 Z" fill="#1D4ED8" opacity="0.8"/>
+        <rect x="10" y="17" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
+        <rect x="10" y="22" width="12" height="2" rx="1" fill="white" opacity="0.6"/>
+        <rect x="10" y="27" width="14" height="2" rx="1" fill="white" opacity="0.6"/>
+        <circle cx="30" cy="36" r="8" fill="#0F172A"/>
+        <circle cx="30" cy="36" r="7" fill="url(#checkGrad3)"/>
+        <path d="M26.5 36 L29 38.5 L33.5 33.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="46" y="31" font-family="'DM Sans', 'Helvetica Neue', sans-serif" font-size="20" font-weight="700" letter-spacing="-0.5" fill="white">Resu<tspan fill="#60A5FA">ify</tspan></text>
+      </svg>
+      <span>dark variant</span>
+    </div>
+  </div>
+</div>
+
+<!-- FAVICON SIZES -->
+<div class="section">
+  <div class="section-label">Favicon — Icon Mark</div>
+  <div class="card">
+    <div class="favicon-grid">
+      <!-- 16px -->
+      <div class="favicon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="16" height="16" fill="none">
+          <defs>
+            <linearGradient id="bg16" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="7" fill="url(#bg16)"/>
+          <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+          <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+          <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+          <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <circle cx="21" cy="22" r="7" fill="white"/>
+          <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+          <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>16px</span>
+      </div>
+      <!-- 32px -->
+      <div class="favicon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+          <defs>
+            <linearGradient id="bg32" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="7" fill="url(#bg32)"/>
+          <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+          <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+          <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+          <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <circle cx="21" cy="22" r="7" fill="white"/>
+          <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+          <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>32px</span>
+      </div>
+      <!-- 48px -->
+      <div class="favicon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="48" height="48" fill="none">
+          <defs>
+            <linearGradient id="bg48" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="7" fill="url(#bg48)"/>
+          <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+          <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+          <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+          <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <circle cx="21" cy="22" r="7" fill="white"/>
+          <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+          <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>48px</span>
+      </div>
+      <!-- 64px -->
+      <div class="favicon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64" fill="none">
+          <defs>
+            <linearGradient id="bg64" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="7" fill="url(#bg64)"/>
+          <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+          <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+          <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+          <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <circle cx="21" cy="22" r="7" fill="white"/>
+          <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+          <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>64px</span>
+      </div>
+      <!-- 96px -->
+      <div class="favicon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="96" height="96" fill="none">
+          <defs>
+            <linearGradient id="bg96" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="7" fill="url(#bg96)"/>
+          <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+          <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+          <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+          <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+          <circle cx="21" cy="22" r="7" fill="white"/>
+          <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+          <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>96px</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER MOCKUP -->
+<div class="section">
+  <div class="section-label">Usage — Header Mockup</div>
+  <div style="display:flex;justify-content:center;">
+    <div class="header-mock">
+      <div class="header-bar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="160" height="38" fill="none">
+          <defs>
+            <linearGradient id="dg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2563EB"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+            <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#60A5FA"/>
+              <stop offset="100%" stop-color="#93C5FD"/>
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="32" height="40" rx="4" fill="url(#dg)"/>
+          <path d="M28 4 L36 12 L28 12 Z" fill="#1E40AF" opacity="0.6"/>
+          <rect x="10" y="17" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
+          <rect x="10" y="22" width="12" height="2" rx="1" fill="white" opacity="0.6"/>
+          <rect x="10" y="27" width="14" height="2" rx="1" fill="white" opacity="0.6"/>
+          <circle cx="30" cy="36" r="8" fill="white"/>
+          <circle cx="30" cy="36" r="7" fill="url(#cg)"/>
+          <path d="M26.5 36 L29 38.5 L33.5 33.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="46" y="31" font-family="'DM Sans', 'Helvetica Neue', sans-serif" font-size="20" font-weight="700" letter-spacing="-0.5" fill="#0F172A">Resu<tspan fill="#2563EB">ify</tspan></text>
+        </svg>
+        <div class="header-nav">
+          <a href="#">Templates</a>
+          <a href="#">Pricing</a>
+          <a href="#">Examples</a>
+        </div>
+        <button class="header-cta">Get Started →</button>
+      </div>
+      <div class="hero-area">
+        <h2>Build your perfect resume in minutes</h2>
+        <p>Professional templates · AI-powered · ATS-ready</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COLOR PALETTE -->
+<div class="section">
+  <div class="section-label">Brand Colors</div>
+  <div class="card">
+    <div class="swatches">
+      <div class="swatch-item">
+        <div class="swatch" style="background:#2563EB;"></div>
+        <div class="swatch-label">#2563EB<br>Primary</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch" style="background:#1D4ED8;"></div>
+        <div class="swatch-label">#1D4ED8<br>Deep</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch" style="background:#60A5FA;"></div>
+        <div class="swatch-label">#60A5FA<br>Accent</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch" style="background:#DBEAFE; border:1px solid #E2E8F0;"></div>
+        <div class="swatch-label">#DBEAFE<br>Tint</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch" style="background:#0F172A;"></div>
+        <div class="swatch-label">#0F172A<br>Text</div>
+      </div>
+      <div class="swatch-item">
+        <div class="swatch" style="background:#F1F5F9; border:1px solid #E2E8F0;"></div>
+        <div class="swatch-label">#F1F5F9<br>BG</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPLEMENTATION CODE -->
+<div class="section">
+  <div class="section-label">Implementation</div>
+  <div class="card" style="flex-direction:column;align-items:flex-start;padding:24px 32px;">
+    <p style="font-size:13px;color:#334155;margin-bottom:8px;font-weight:600;">1. Copy files to your project</p>
+    <pre style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:12px;color:#334155;width:100%;overflow-x:auto;">cp logo-resuify.svg   your-project/public/logo-resuify.svg
+cp favicon-resuify.svg your-project/public/favicon-resuify.svg</pre>
+
+    <p style="font-size:13px;color:#334155;margin-top:20px;margin-bottom:8px;font-weight:600;">2. Update index.html</p>
+    <pre style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:12px;color:#334155;width:100%;overflow-x:auto;">&lt;title&gt;Resuify — Build Your Perfect Resume&lt;/title&gt;
+&lt;link rel="icon" type="image/svg+xml" href="/favicon-resuify.svg"&gt;
+&lt;meta name="description" content="Create a professional resume in minutes with Resuify. ATS-ready templates, AI-powered."&gt;
+&lt;meta property="og:title" content="Resuify — Resume Builder"&gt;</pre>
+
+    <p style="font-size:13px;color:#334155;margin-top:20px;margin-bottom:8px;font-weight:600;">3. Update src/pages/Index.tsx header</p>
+    <pre style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:16px;font-family:'DM Mono',monospace;font-size:12px;color:#334155;width:100%;overflow-x:auto;">// Replace the plain text header logo with:
+&lt;img
+  src="/logo-resuify.svg"
+  alt="Resuify"
+  height={38}
+  className="h-9 w-auto"
+/&gt;</pre>
+  </div>
+</div>
+
+</body>
+</html>

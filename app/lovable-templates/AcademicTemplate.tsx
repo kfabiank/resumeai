@@ -7,6 +7,9 @@ interface Props {
 
 const CreativeTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page flex">
@@ -68,6 +71,16 @@ const CreativeTemplate = ({ data }: Props) => {
               </li>
             ))}
           </ul>
+          {languages.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs" style={{ color: "#94a3b8" }}>
+              {languages.map((language, i) => (
+                <li key={`lang-${i}`} className="flex items-center gap-2">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#f59e0b" }} />
+                  {language}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 

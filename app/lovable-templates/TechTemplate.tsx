@@ -7,6 +7,9 @@ interface Props {
 
 const TechTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-10" style={{ fontFamily: "'JetBrains Mono', 'Inter', monospace" }}>
@@ -75,7 +78,7 @@ const TechTemplate = ({ data }: Props) => {
           {skills.technical.map((skill, i) => (
             <span
               key={i}
-              className="inline-flex items-center rounded-sm px-2 py-1 text-xs font-medium leading-none"
+              className="inline-flex items-center whitespace-nowrap rounded-sm px-2 py-[3px] text-xs font-medium leading-tight"
               style={{ background: "#0f172a", color: "#10b981" }}
             >
               {skill}
@@ -109,6 +112,14 @@ const TechTemplate = ({ data }: Props) => {
         <p className="text-xs" style={{ color: "#64748b" }}>
           {skills.soft.join(" · ")}
         </p>
+        {languages.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Languages</p>
+              <p className="mt-1 text-xs" style={{ color: "#64748b" }}>
+                {languages.join(" · ")}
+              </p>
+            </div>
+          )}
       </section>
     </div>
   );

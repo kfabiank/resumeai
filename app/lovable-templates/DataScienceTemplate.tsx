@@ -7,11 +7,20 @@ interface Props {
 
 const DataScienceTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
-    <div className="a4-page flex">
+    <div
+      className="a4-page flex min-h-[1123px] sidebar-rail-template"
+      style={{
+        ["--left-rail-width" as any]: "208px",
+        ["--left-rail-color" as any]: "#1e1b4b",
+      }}
+    >
       {/* Sidebar */}
-      <div className="w-52 p-6" style={{ background: "#1e1b4b", color: "#e0e7ff", fontFamily: "'Inter', sans-serif" }}>
+      <div className="self-stretch w-52 p-6" data-left-rail style={{ background: "#1e1b4b", color: "#e0e7ff", fontFamily: "'Inter', sans-serif" }}>
         <div className="mb-6">
           <h1 className="text-lg font-bold text-white">{personalInfo.name}</h1>
           <p className="mt-1 text-xs" style={{ color: "#a5b4fc" }}>{personalInfo.headline}</p>
@@ -53,6 +62,18 @@ const DataScienceTemplate = ({ data }: Props) => {
               <li key={i} className="text-xs" style={{ color: "#a5b4fc" }}>{s}</li>
             ))}
           </ul>
+          {languages.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-3 text-xs font-bold uppercase" style={{ color: "#818cf8" }}>Languages</h2>
+              <ul className="space-y-0.5">
+                {languages.map((language, i) => (
+                  <li key={`lang-${i}`} className="text-xs" style={{ color: "#a5b4fc" }}>
+                    {language}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       </div>
 

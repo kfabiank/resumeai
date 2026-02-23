@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+
+  <!-- Document shape -->
+  <rect x="7" y="4" width="14" height="18" rx="2" fill="white" opacity="0.95"/>
+  <!-- Folded corner -->
+  <path d="M17 4 L21 8 L17 8 Z" fill="#BFDBFE"/>
+
+  <!-- Text lines on doc -->
+  <rect x="9" y="10" width="8" height="1.5" rx="0.75" fill="#2563EB" opacity="0.7"/>
+  <rect x="9" y="13" width="6" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+  <rect x="9" y="16" width="7" height="1.5" rx="0.75" fill="#2563EB" opacity="0.5"/>
+
+  <!-- Check badge -->
+  <circle cx="21" cy="22" r="7" fill="white"/>
+  <circle cx="21" cy="22" r="6" fill="#2563EB"/>
+  <path d="M18 22 L20.2 24.2 L24 19.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

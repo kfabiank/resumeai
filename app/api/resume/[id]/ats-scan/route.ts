@@ -91,6 +91,8 @@ export async function POST(
       select: {
         id: true,
         userId: true,
+        jobTitle: true,
+        jobDescription: true,
         user: {
           select: {
             planType: true,
@@ -108,7 +110,10 @@ export async function POST(
 
     const planType = resume.user.planType || "free";
     const isFree = planType === "free";
-    const scanResult = runAtsScan(content);
+    const scanResult = runAtsScan(content, {
+      jobDescription: resume.jobDescription || "",
+      targetRole: resume.jobTitle || content.personalInfo?.headline || "",
+    });
 
     const startOfMonth = monthStartUtc();
     const currentHash = contentHash(content);
@@ -172,6 +177,11 @@ export async function POST(
           metadata: {
             resumeId: resume.id,
             score: scanResult.score,
+            version: scanResult.version,
+            subscores: scanResult.subscores,
+            benchmark: scanResult.benchmark,
+            gaps: scanResult.gaps.slice(0, 8),
+            diagnostics: scanResult.diagnostics,
             contentHash: currentHash,
             planType,
           },

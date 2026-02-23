@@ -7,6 +7,9 @@ interface Props {
 
 const FinanceTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-12" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -71,6 +74,14 @@ const FinanceTemplate = ({ data }: Props) => {
           <p className="text-xs leading-relaxed" style={{ color: "#475569" }}>
             {[...skills.technical, ...skills.soft].join(" · ")}
           </p>
+          {languages.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>Languages</p>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: "#475569" }}>
+                {languages.join(" · ")}
+              </p>
+            </div>
+          )}
         </section>
       </div>
     </div>

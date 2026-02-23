@@ -1,8 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
-import type { ResumeData } from "@/types/resume";
+import { useMemo, useState } from "react";
 
 type QaItem = {
   id: string;
@@ -14,73 +12,21 @@ type Props = {
   items: QaItem[];
 };
 
-type ResumeApiResponse = {
-  id: string;
-  title: string;
-  templateId: string;
-  content: any;
-};
-
-type ExportRenderState = {
-  title: string;
-  templateId: string;
-  data: ResumeData;
-};
-
-function sanitizeName(value: string) {
-  return `${value || "resume"}`.replace(/[^a-zA-Z0-9-_ ]/g, "").trim() || "resume";
-}
-
-function mapToResumeData(content: any): ResumeData {
-  const personal = content?.personalInfo || {};
-  const experiences = Array.isArray(content?.experiences) ? content.experiences : [];
-  const education = Array.isArray(content?.education) ? content.education : [];
-  const technical = Array.isArray(content?.skills?.technical) ? content.skills.technical : [];
-  const soft = Array.isArray(content?.skills?.soft) ? content.skills.soft : [];
-  const keywords = Array.isArray(content?.keywords) ? content.keywords : [];
-
-  return {
-    personalInfo: {
-      name: personal.name || "John Doe",
-      email: personal.email || "john.doe@email.com",
-      phone: personal.phone || "+1 555 123 4567",
-      location: personal.location || "",
-      linkedin: personal.linkedin || "",
-      portfolio: personal.portfolio || "",
-      headline: personal.headline || "",
-    },
-    professionalSummary: content?.professionalSummary || "",
-    experiences: experiences.map((exp: any) => ({
-      title: exp?.title || "",
-      company: exp?.company || "",
-      location: exp?.location || "",
-      startDate: exp?.startDate || "",
-      endDate: exp?.endDate || "",
-      current: !!exp?.current,
-      optimizedBullets: Array.isArray(exp?.optimizedBullets) ? exp.optimizedBullets : [],
-      keywordsUsed: Array.isArray(exp?.keywordsUsed) ? exp.keywordsUsed : [],
-    })),
-    education: education.map((edu: any) => ({
-      degree: edu?.degree || "",
-      institution: edu?.institution || "",
-      location: edu?.location || "",
-      graduationDate: edu?.graduationDate || "",
-      gpa: edu?.gpa || "",
-    })),
-    skills: {
-      technical,
-      soft,
-    },
-    keywords,
-  };
-}
-
-async function downloadBlob(url: string, method: "GET" | "POST", filename: string) {
+async function downloadBlob(url: string, method: "GET" | "POST", fallbackName: string) {
   const res = await fetch(url, { method, credentials: "include" });
   if (!res.ok) {
-    throw new Error(`Download failed (${res.status}) for ${filename}`);
+    throw new Error(`Download failed (${res.status}) for ${fallbackName}`);
   }
   const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition") || "";
+  const headerFileName =
+    disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1] ||
+    disposition.match(/filename="([^"]+)"/i)?.[1] ||
+    disposition.match(/filename=([^;]+)/i)?.[1] ||
+    "";
+  const filename = headerFileName
+    ? decodeURIComponent(headerFileName).replace(/^["']|["']$/g, "")
+    : fallbackName;
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = objectUrl;
@@ -95,194 +41,9 @@ export default function AdminQABulkDownloads({ items }: Props) {
   const [busy, setBusy] = useState<null | "png" | "pdf" | "docx">(null);
   const [error, setError] = useState("");
   const [done, setDone] = useState("");
-  const [exportRenderState, setExportRenderState] = useState<ExportRenderState | null>(null);
-  const exportPreviewRef = useRef<HTMLDivElement | null>(null);
 
   const pngItems = useMemo(() => items.filter((i) => i.pngFile), [items]);
   const pdfItems = useMemo(() => items.filter((i) => i.resumeId), [items]);
-
-  const downloadStyledPdf = async (resumeId: string, fallbackName: string) => {
-    const resumeRes = await fetch(`/api/resume/${resumeId}`, {
-      credentials: "include",
-      cache: "no-store",
-    });
-    if (!resumeRes.ok) {
-      throw new Error(`Could not load resume ${resumeId} for PDF export.`);
-    }
-
-    const resume = (await resumeRes.json()) as ResumeApiResponse;
-    const renderData: ExportRenderState = {
-      title: resume.title || fallbackName,
-      templateId: resume.templateId || "modern-professional",
-      data: mapToResumeData(resume.content || {}),
-    };
-    setExportRenderState(renderData);
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
-    if ("fonts" in document) {
-      await document.fonts.ready;
-    }
-
-    const exportNode = exportPreviewRef.current;
-    if (!exportNode) {
-      throw new Error("Template preview is not ready yet.");
-    }
-
-    const sandbox = document.createElement("div");
-    sandbox.style.position = "fixed";
-    sandbox.style.left = "-10000px";
-    sandbox.style.top = "0";
-    sandbox.style.zIndex = "-1";
-    sandbox.style.background = "#ffffff";
-    sandbox.style.width = `${exportNode.scrollWidth}px`;
-    sandbox.style.overflow = "hidden";
-
-    const clonedNode = exportNode.cloneNode(true) as HTMLDivElement;
-    clonedNode.setAttribute("data-template-id", renderData.templateId);
-    clonedNode.style.position = "static";
-    clonedNode.style.left = "0";
-    clonedNode.style.top = "0";
-    clonedNode.style.opacity = "1";
-    clonedNode.style.visibility = "visible";
-    clonedNode.style.display = "block";
-    clonedNode.style.transform = "none";
-    clonedNode.style.pointerEvents = "none";
-
-    sandbox.appendChild(clonedNode);
-    document.body.appendChild(sandbox);
-
-    const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
-      import("html2canvas"),
-      import("jspdf"),
-    ]);
-
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      selection.removeAllRanges();
-    }
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-
-    const isCanvasBlank = (target: HTMLCanvasElement) => {
-      if (!target.width || !target.height) return true;
-      const ctx = target.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return true;
-      const sampleGrid = 12;
-      const stepX = Math.max(1, Math.floor(target.width / sampleGrid));
-      const stepY = Math.max(1, Math.floor(target.height / sampleGrid));
-      for (let y = 0; y < target.height; y += stepY) {
-        for (let x = 0; x < target.width; x += stepX) {
-          const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data;
-          const isTransparent = a === 0;
-          const isWhite = r > 245 && g > 245 && b > 245;
-          if (!isTransparent && !isWhite) {
-            return false;
-          }
-        }
-      }
-      return true;
-    };
-
-    const baseCanvasOptions = {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: clonedNode.scrollWidth,
-      windowHeight: clonedNode.scrollHeight,
-      onclone: (clonedDoc: Document) => {
-        clonedDoc.getSelection()?.removeAllRanges();
-        const style = clonedDoc.createElement("style");
-        style.textContent = `
-          * { animation: none !important; transition: none !important; caret-color: transparent !important; }
-          *, *::before, *::after {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          ::selection { background: transparent !important; color: inherit !important; }
-          [data-template-id="tech-minimal"] span,
-          [data-template-id="startup-modern"] span {
-            line-height: 1.1 !important;
-          }
-          [data-template-id="tech-minimal"] section:nth-of-type(3) span {
-            display: inline-block !important;
-          }
-        `;
-        clonedDoc.head.appendChild(style);
-      },
-    };
-
-    let canvas: HTMLCanvasElement;
-    try {
-      canvas = await html2canvas(clonedNode, { ...baseCanvasOptions, foreignObjectRendering: true });
-      if (isCanvasBlank(canvas)) {
-        canvas = await html2canvas(clonedNode, { ...baseCanvasOptions, foreignObjectRendering: false });
-      }
-    } catch {
-      canvas = await html2canvas(clonedNode, { ...baseCanvasOptions, foreignObjectRendering: false });
-    }
-    sandbox.remove();
-
-    if (isCanvasBlank(canvas)) {
-      throw new Error("The PDF canvas rendered blank.");
-    }
-
-    const pdf = new JsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const pxPerMm = canvas.width / pageWidth;
-    const pageHeightPx = Math.floor(pageHeight * pxPerMm);
-
-    let renderedHeight = 0;
-    let pageIndex = 0;
-
-    while (renderedHeight < canvas.height - 1) {
-      const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = sliceHeight;
-
-      const ctx = pageCanvas.getContext("2d");
-      if (!ctx) throw new Error("Failed to render PDF page.");
-
-      ctx.drawImage(
-        canvas,
-        0,
-        renderedHeight,
-        canvas.width,
-        sliceHeight,
-        0,
-        0,
-        canvas.width,
-        sliceHeight
-      );
-
-      if (pageIndex > 0) {
-        pdf.addPage();
-      }
-      const pageData = pageCanvas.toDataURL("image/png");
-      const pdfSliceHeight = (sliceHeight * pageWidth) / canvas.width;
-      pdf.addImage(pageData, "PNG", 0, 0, pageWidth, pdfSliceHeight);
-
-      renderedHeight += sliceHeight;
-      pageIndex += 1;
-    }
-
-    const blob = pdf.output("blob");
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = `${sanitizeName(renderData.title || fallbackName)}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(objectUrl);
-  };
 
   const run = async (kind: "png" | "pdf" | "docx") => {
     setBusy(kind);
@@ -301,7 +62,11 @@ export default function AdminQABulkDownloads({ items }: Props) {
       for (const item of pdfItems) {
         if (!item.resumeId) continue;
         if (kind === "pdf") {
-          await downloadStyledPdf(item.resumeId, item.id);
+          await downloadBlob(
+            `/api/resume/${item.resumeId}/export-styled-pdf`,
+            "POST",
+            `${item.id}.pdf`
+          );
           continue;
         }
         await downloadBlob(`/api/resume/${item.resumeId}/export-docx`, "POST", `${item.id}.docx`);
@@ -310,7 +75,6 @@ export default function AdminQABulkDownloads({ items }: Props) {
     } catch (e: any) {
       setError(e?.message || "Bulk download failed.");
     } finally {
-      setExportRenderState(null);
       setBusy(null);
     }
   };
@@ -346,17 +110,6 @@ export default function AdminQABulkDownloads({ items }: Props) {
       </div>
       {done ? <p className="mt-2 text-xs text-emerald-700">{done}</p> : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
-      <div className="fixed -left-[10000px] top-0 pointer-events-none opacity-0">
-        {exportRenderState ? (
-          <div
-            ref={exportPreviewRef}
-            data-template-id={exportRenderState.templateId}
-            className="w-[794px] min-h-[1123px] overflow-hidden bg-white"
-          >
-            <TemplateRenderer templateId={exportRenderState.templateId} data={exportRenderState.data} />
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 }

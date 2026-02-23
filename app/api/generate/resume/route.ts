@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
       professionalSummary: optimizedResume.professionalSummary,
       experiences: optimizedResume.experiences,
       education: optimizedResume.education,
+      certifications: [],
+      projects: [],
+      languages: [],
       skills: optimizedResume.skills,
       keywords: optimizedResume.keywords,
     };

@@ -7,6 +7,9 @@ interface Props {
 
 const MedicalTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-10" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
@@ -102,6 +105,20 @@ const MedicalTemplate = ({ data }: Props) => {
               <li key={i} className="text-xs" style={{ color: "#475569" }}>{skill}</li>
             ))}
           </ul>
+          {languages.length > 0 && (
+            <>
+              <h3 className="mb-2 mt-3 text-xs font-bold uppercase tracking-widest" style={{ color: "#0891b2" }}>
+                Languages
+              </h3>
+              <ul className="space-y-0.5">
+                {languages.map((language, i) => (
+                  <li key={`lang-${i}`} className="text-xs" style={{ color: "#475569" }}>
+                    {language}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       </div>
     </div>

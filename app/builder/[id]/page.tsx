@@ -37,6 +37,50 @@ type AtsUsage = {
 };
 
 function mapToLovableResumeData(content: ResumeContent): ResumeData {
+  const normalizedLanguages = (content.languages || [])
+    .map((lang) => ({
+      name:
+        typeof lang === "string"
+          ? lang
+          : (lang as any)?.name || (lang as any)?.language || "",
+      level:
+        typeof lang === "string"
+          ? ""
+          : (lang as any)?.level || (lang as any)?.proficiency || "",
+    }))
+    .filter((lang) => lang.name);
+
+  const projectExperiences = (content.projects || []).map((project) => {
+    const bullets = [
+      project.description || "",
+      ...((project.achievements || []).filter(Boolean) as string[]),
+      project.technologies?.length
+        ? `Technologies: ${project.technologies.join(", ")}`
+        : "",
+      project.url ? `Link: ${project.url}` : "",
+    ].filter(Boolean);
+
+    return {
+      title: project.name || "Project",
+      company: project.role || "Independent Project",
+      location: "",
+      startDate: "",
+      endDate: "",
+      current: false,
+      optimizedBullets: bullets.length ? bullets : ["Project details available upon request."],
+      keywordsUsed: project.technologies || [],
+    };
+  });
+
+  const certificationEducation = (content.certifications || []).map((cert) => ({
+    degree: cert.name || "Certification",
+    institution: cert.issuer || "Certification Body",
+    location: cert.url || "",
+    graduationDate: cert.issueDate || "",
+    gpa: cert.credentialId ? `ID: ${cert.credentialId}` : "",
+  }));
+
+
   return {
     personalInfo: {
       ...content.personalInfo,
@@ -44,13 +88,85 @@ function mapToLovableResumeData(content: ResumeContent): ResumeData {
       portfolio: content.personalInfo.portfolio,
     },
     professionalSummary: content.professionalSummary,
-    experiences: content.experiences.map((exp) => ({
+    experiences: [...content.experiences, ...projectExperiences].map((exp) => ({
       ...exp,
       keywordsUsed: exp.keywordsUsed || [],
     })),
-    education: content.education,
-    skills: content.skills,
+    education: [...content.education, ...certificationEducation],
+    certifications: content.certifications || [],
+    projects: content.projects || [],
+    languages: normalizedLanguages,
+    skills: {
+      technical: content.skills.technical || [],
+      soft: content.skills.soft || [],
+    },
     keywords: content.keywords,
+  };
+}
+
+function normalizeResumeContent(content: any): ResumeContent {
+  return {
+    personalInfo: {
+      name: content?.personalInfo?.name || "",
+      email: content?.personalInfo?.email || "",
+      phone: content?.personalInfo?.phone || "",
+      location: content?.personalInfo?.location || "",
+      linkedin: content?.personalInfo?.linkedin || "",
+      portfolio: content?.personalInfo?.portfolio || "",
+      headline: content?.personalInfo?.headline || "",
+    },
+    professionalSummary: content?.professionalSummary || "",
+    experiences: Array.isArray(content?.experiences)
+      ? content.experiences.map((exp: any) => ({
+          title: exp?.title || "",
+          company: exp?.company || "",
+          location: exp?.location || "",
+          startDate: exp?.startDate || "",
+          endDate: exp?.endDate || "",
+          current: !!exp?.current,
+          optimizedBullets: Array.isArray(exp?.optimizedBullets) ? exp.optimizedBullets : [""],
+          keywordsUsed: Array.isArray(exp?.keywordsUsed) ? exp.keywordsUsed : [],
+        }))
+      : [],
+    education: Array.isArray(content?.education)
+      ? content.education.map((edu: any) => ({
+          degree: edu?.degree || "",
+          institution: edu?.institution || "",
+          location: edu?.location || "",
+          graduationDate: edu?.graduationDate || "",
+          gpa: edu?.gpa || "",
+        }))
+      : [],
+    certifications: Array.isArray(content?.certifications)
+      ? content.certifications.map((cert: any) => ({
+          name: cert?.name || "",
+          issuer: cert?.issuer || "",
+          issueDate: cert?.issueDate || "",
+          credentialId: cert?.credentialId || "",
+          url: cert?.url || "",
+        }))
+      : [],
+    projects: Array.isArray(content?.projects)
+      ? content.projects.map((project: any) => ({
+          name: project?.name || "",
+          role: project?.role || "",
+          url: project?.url || "",
+          description: project?.description || "",
+          achievements: Array.isArray(project?.achievements) ? project.achievements : [],
+          technologies: Array.isArray(project?.technologies) ? project.technologies : [],
+        }))
+      : [],
+    languages: Array.isArray(content?.languages)
+      ? content.languages.map((lang: any) => ({
+          name: typeof lang === "string" ? lang : lang?.name || lang?.language || "",
+          level: typeof lang === "string" ? "" : lang?.level || lang?.proficiency || "",
+        }))
+      : [],
+    skills: {
+      technical: Array.isArray(content?.skills?.technical) ? content.skills.technical : [],
+      soft: Array.isArray(content?.skills?.soft) ? content.skills.soft : [],
+    },
+    keywords: Array.isArray(content?.keywords) ? content.keywords : [],
   };
 }
 
@@ -76,7 +192,6 @@ export default function ResumeEditorPage() {
   const [atsUsage, setAtsUsage] = useState<AtsUsage | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalMode, setUpgradeModalMode] = useState<"soft" | "hard">("soft");
-  const exportPreviewRef = useRef<HTMLDivElement | null>(null);
   const summaryRef = useRef<HTMLTextAreaElement | null>(null);
   const experienceRef = useRef<HTMLDivElement | null>(null);
   const skillsRef = useRef<HTMLDivElement | null>(null);
@@ -97,10 +212,11 @@ export default function ResumeEditorPage() {
         }
         const data: ResumeApiResponse = await response.json();
         setResume(data);
-        setContent(data.content);
+        const normalized = normalizeResumeContent(data.content);
+        setContent(normalized);
         setSelectedTemplateId(data.templateId || "modern-professional");
         setUserPlan(data.user?.planType || "free");
-        setAtsResult(runAtsScan(data.content));
+        setAtsResult(runAtsScan(normalized));
 
         const [shareRes, atsUsageRes] = await Promise.all([
           fetch(`/api/resume/${id}/share`, { cache: "no-store" }),
@@ -146,7 +262,7 @@ export default function ResumeEditorPage() {
     [selectedTemplateId]
   );
 
-  const handleSave = async () => {
+  const persistResume = async (opts?: { showSuccessToast?: boolean }) => {
     if (!resume || !content) return;
 
     setIsSaving(true);
@@ -163,8 +279,7 @@ export default function ResumeEditorPage() {
 
       const body = await response.json();
       if (!response.ok) {
-        alert(body.error || body.message || "Failed to save resume");
-        return;
+        throw new Error(body.error || body.message || "Failed to save resume");
       }
 
       setResume((prev) =>
@@ -176,183 +291,57 @@ export default function ResumeEditorPage() {
           : prev
       );
       setSelectedTemplateId(body.templateId || selectedTemplateId);
-      alert("Resume saved successfully!");
+      if (opts?.showSuccessToast) {
+        alert("Resume saved successfully!");
+      }
     } catch (error) {
-      alert("Failed to save resume");
+      throw error;
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleSave = async () => {
+    try {
+      await persistResume({ showSuccessToast: true });
+    } catch (error: any) {
+      alert(error?.message || "Failed to save resume");
+    }
+  };
+
   const handleExportPDF = async () => {
     if (!resume) return;
-    const exportNode = exportPreviewRef.current;
-    if (!exportNode) {
-      alert("Preview is not ready yet");
-      return;
-    }
     setIsExporting(true);
 
     try {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        selection.removeAllRanges();
-      }
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-      if ("fonts" in document) {
-        await document.fonts.ready;
-      }
+      await persistResume();
 
-      const [{ default: html2canvas }, { default: JsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-
-      const sandbox = document.createElement("div");
-      sandbox.style.position = "fixed";
-      sandbox.style.left = "-10000px";
-      sandbox.style.top = "0";
-      sandbox.style.zIndex = "-1";
-      sandbox.style.background = "#ffffff";
-      sandbox.style.width = `${exportNode.scrollWidth}px`;
-      sandbox.style.overflow = "hidden";
-
-      const clonedNode = exportNode.cloneNode(true) as HTMLDivElement;
-      clonedNode.setAttribute("data-template-id", selectedTemplateId);
-      clonedNode.style.position = "static";
-      clonedNode.style.left = "0";
-      clonedNode.style.top = "0";
-      clonedNode.style.opacity = "1";
-      clonedNode.style.pointerEvents = "none";
-
-      sandbox.appendChild(clonedNode);
-      document.body.appendChild(sandbox);
-
-      const baseCanvasOptions = {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: clonedNode.scrollWidth,
-        windowHeight: clonedNode.scrollHeight,
-        onclone: (clonedDoc: Document) => {
-          clonedDoc.getSelection()?.removeAllRanges();
-          const style = clonedDoc.createElement("style");
-          style.textContent = `
-            * { animation: none !important; transition: none !important; caret-color: transparent !important; }
-            * , *::before, *::after {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              color-adjust: exact !important;
-            }
-            ::selection { background: transparent !important; color: inherit !important; }
-            [data-template-id="tech-minimal"] span,
-            [data-template-id="startup-modern"] span {
-              line-height: 1.1 !important;
-            }
-            [data-template-id="tech-minimal"] section:nth-of-type(3) span {
-              display: inline-block !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        },
-      };
-
-      const isCanvasBlank = (target: HTMLCanvasElement) => {
-        if (!target.width || !target.height) return true;
-        const ctx = target.getContext("2d", { willReadFrequently: true });
-        if (!ctx) return true;
-
-        const sampleGrid = 12;
-        const stepX = Math.max(1, Math.floor(target.width / sampleGrid));
-        const stepY = Math.max(1, Math.floor(target.height / sampleGrid));
-
-        for (let y = 0; y < target.height; y += stepY) {
-          for (let x = 0; x < target.width; x += stepX) {
-            const [r, g, b, a] = ctx.getImageData(x, y, 1, 1).data;
-            const isTransparent = a === 0;
-            const isWhite = r > 245 && g > 245 && b > 245;
-            if (!isTransparent && !isWhite) {
-              return false;
-            }
-          }
-        }
-
-        return true;
-      };
-
-      let canvas: HTMLCanvasElement;
-      try {
-        canvas = await html2canvas(clonedNode, {
-          ...baseCanvasOptions,
-          foreignObjectRendering: true,
-        });
-        if (isCanvasBlank(canvas)) {
-          canvas = await html2canvas(clonedNode, {
-            ...baseCanvasOptions,
-            foreignObjectRendering: false,
-          });
-        }
-      } catch {
-        canvas = await html2canvas(clonedNode, {
-          ...baseCanvasOptions,
-          foreignObjectRendering: false,
-        });
+      const res = await fetch(`/api/resume/${id}/export-styled-pdf`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to export PDF");
       }
 
-      sandbox.remove();
-
-      const pdf = new JsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const pxPerMm = canvas.width / pageWidth;
-      const pageHeightPx = Math.floor(pageHeight * pxPerMm);
-
-      let renderedHeight = 0;
-      let pageIndex = 0;
-
-      while (renderedHeight < canvas.height - 1) {
-        const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHeight;
-
-        const ctx = pageCanvas.getContext("2d");
-        if (!ctx) throw new Error("Failed to render PDF page");
-
-        ctx.drawImage(
-          canvas,
-          0,
-          renderedHeight,
-          canvas.width,
-          sliceHeight,
-          0,
-          0,
-          canvas.width,
-          sliceHeight
-        );
-
-        const pageData = pageCanvas.toDataURL("image/png");
-        if (pageIndex > 0) {
-          pdf.addPage();
-        }
-
-        const pdfSliceHeight = (sliceHeight * pageWidth) / canvas.width;
-        pdf.addImage(pageData, "PNG", 0, 0, pageWidth, pdfSliceHeight);
-
-        renderedHeight += sliceHeight;
-        pageIndex += 1;
-      }
-
-      const safeName = `${resume.title || "resume"}`
-        .replace(/[^a-zA-Z0-9-_ ]/g, "")
-        .trim() || "resume";
-
-      pdf.save(`${safeName}.pdf`);
+      const blob = await res.blob();
+      const disposition = res.headers.get("content-disposition") || "";
+      const headerFileName =
+        disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1] ||
+        disposition.match(/filename="([^"]+)"/i)?.[1] ||
+        disposition.match(/filename=([^;]+)/i)?.[1] ||
+        "";
+      const fileName = headerFileName
+        ? decodeURIComponent(headerFileName).replace(/^["']|["']$/g, "")
+        : `Resume - ${content?.personalInfo?.name || resume.title || "Resume"}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch (error: any) {
       alert(error?.message || "Failed to export PDF");
     } finally {
@@ -374,13 +363,19 @@ export default function ResumeEditorPage() {
       }
 
       const blob = await res.blob();
-      const fileName = `${resume.title || "resume"}`
-        .replace(/[^a-zA-Z0-9-_ ]/g, "")
-        .trim() || "resume";
+      const disposition = res.headers.get("content-disposition") || "";
+      const headerFileName =
+        disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1] ||
+        disposition.match(/filename="([^"]+)"/i)?.[1] ||
+        disposition.match(/filename=([^;]+)/i)?.[1] ||
+        "";
+      const fileName = headerFileName
+        ? decodeURIComponent(headerFileName).replace(/^["']|["']$/g, "")
+        : `Resume - ${content?.personalInfo?.name || resume.title || "Resume"}.docx`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${fileName}.docx`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -602,14 +597,14 @@ export default function ResumeEditorPage() {
                 <Download className="mr-2 h-4 w-4" />
                 {isExporting ? "Exporting..." : "Export PDF"}
               </button>
-              <button
+              {/* <button
                 onClick={handleExportDOCX}
                 disabled={isExportingDocx}
                 className="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition inline-flex items-center text-sm font-medium disabled:opacity-50"
               >
                 <Download className="mr-2 h-4 w-4" />
                 {isExportingDocx ? "Exporting..." : "Export DOCX"}
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -631,6 +626,34 @@ export default function ResumeEditorPage() {
                 <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
                 <h3 className="font-bold text-gray-900">ATS Insights</h3>
               </div>
+              {atsResult?.subscores ? (
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500">Semantic</p>
+                    <p className="text-sm font-semibold text-gray-900">{atsResult.subscores.semantic}/100</p>
+                  </div>
+                  <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500">Quality</p>
+                    <p className="text-sm font-semibold text-gray-900">{atsResult.subscores.quality}/100</p>
+                  </div>
+                  <div className="rounded-lg border border-blue-200 bg-white px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500">Technical</p>
+                    <p className="text-sm font-semibold text-gray-900">{atsResult.subscores.technical}/100</p>
+                  </div>
+                </div>
+              ) : null}
+              {atsResult?.benchmark ? (
+                <div
+                  className={`mb-4 rounded-lg border px-3 py-2 text-xs ${
+                    atsResult.benchmark.status === "on_track"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-amber-200 bg-amber-50 text-amber-800"
+                  }`}
+                >
+                  Target benchmark ({atsResult.benchmark.seniority.toUpperCase()}): {atsResult.benchmark.target} ·{" "}
+                  {atsResult.benchmark.status === "on_track" ? "On track" : "Below target"}
+                </div>
+              ) : null}
               <div className="space-y-3 text-sm">
                 {(atsResult?.suggestions || []).map((item) => (
                   <button
@@ -659,6 +682,26 @@ export default function ResumeEditorPage() {
                   </button>
                 ))}
               </div>
+              {atsResult?.gaps?.length ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                    Top Vacancy Gaps
+                  </p>
+                  {atsResult.gaps.slice(0, 3).map((gap) => (
+                    <div key={gap.id} className="rounded-lg border border-orange-200 bg-orange-50 p-2">
+                      <p className="text-xs font-semibold text-orange-900">
+                        {gap.keyword} ({gap.area})
+                      </p>
+                      <p className="text-xs text-orange-800">{gap.insertionHint}</p>
+                      {gap.suggestedBullet ? (
+                        <p className="mt-1 text-xs text-orange-900">
+                          Example: <span className="italic">{gap.suggestedBullet}</span>
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -874,6 +917,365 @@ export default function ResumeEditorPage() {
                 ))}
               </div>
 
+              <div className="mb-6 rounded-lg border border-gray-200 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Education</h3>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setContent({
+                        ...content,
+                        education: [
+                          ...(content.education || []),
+                          { degree: "", institution: "", location: "", graduationDate: "", gpa: "" },
+                        ],
+                      })
+                    }
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    + Add Education
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {(content.education || []).map((edu, eduIndex) => (
+                    <div key={eduIndex} className="rounded-md border border-gray-200 p-3">
+                      <div className="mb-2 flex items-start justify-between">
+                        <span className="text-xs font-medium text-gray-500">Entry {eduIndex + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setContent({
+                              ...content,
+                              education: (content.education || []).filter((_, i) => i !== eduIndex),
+                            })
+                          }
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={edu.degree}
+                          onChange={(e) => {
+                            const next = [...(content.education || [])];
+                            next[eduIndex] = { ...next[eduIndex], degree: e.target.value };
+                            setContent({ ...content, education: next });
+                          }}
+                          placeholder="Degree"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={edu.institution}
+                          onChange={(e) => {
+                            const next = [...(content.education || [])];
+                            next[eduIndex] = { ...next[eduIndex], institution: e.target.value };
+                            setContent({ ...content, education: next });
+                          }}
+                          placeholder="Institution"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={edu.location || ""}
+                          onChange={(e) => {
+                            const next = [...(content.education || [])];
+                            next[eduIndex] = { ...next[eduIndex], location: e.target.value };
+                            setContent({ ...content, education: next });
+                          }}
+                          placeholder="Location"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={edu.graduationDate}
+                          onChange={(e) => {
+                            const next = [...(content.education || [])];
+                            next[eduIndex] = { ...next[eduIndex], graduationDate: e.target.value };
+                            setContent({ ...content, education: next });
+                          }}
+                          placeholder="Graduation Date"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={edu.gpa || ""}
+                          onChange={(e) => {
+                            const next = [...(content.education || [])];
+                            next[eduIndex] = { ...next[eduIndex], gpa: e.target.value };
+                            setContent({ ...content, education: next });
+                          }}
+                          placeholder="GPA (optional)"
+                          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(content.education || []).length === 0 ? (
+                    <p className="text-xs text-gray-500">No education entries yet.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mb-6 rounded-lg border border-gray-200 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Certifications</h3>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setContent({
+                        ...content,
+                        certifications: [
+                          ...(content.certifications || []),
+                          { name: "", issuer: "", issueDate: "", credentialId: "", url: "" },
+                        ],
+                      })
+                    }
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    + Add Certification
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {(content.certifications || []).map((cert, certIndex) => (
+                    <div key={certIndex} className="rounded-md border border-gray-200 p-3">
+                      <div className="mb-2 flex items-start justify-between">
+                        <span className="text-xs font-medium text-gray-500">Certification {certIndex + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setContent({
+                              ...content,
+                              certifications: (content.certifications || []).filter((_, i) => i !== certIndex),
+                            })
+                          }
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={cert.name || ""}
+                          onChange={(e) => {
+                            const next = [...(content.certifications || [])];
+                            next[certIndex] = { ...next[certIndex], name: e.target.value };
+                            setContent({ ...content, certifications: next });
+                          }}
+                          placeholder="Certification Name"
+                          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={cert.issuer || ""}
+                          onChange={(e) => {
+                            const next = [...(content.certifications || [])];
+                            next[certIndex] = { ...next[certIndex], issuer: e.target.value };
+                            setContent({ ...content, certifications: next });
+                          }}
+                          placeholder="Issuer"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={cert.issueDate || ""}
+                          onChange={(e) => {
+                            const next = [...(content.certifications || [])];
+                            next[certIndex] = { ...next[certIndex], issueDate: e.target.value };
+                            setContent({ ...content, certifications: next });
+                          }}
+                          placeholder="Issue Date"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={cert.credentialId || ""}
+                          onChange={(e) => {
+                            const next = [...(content.certifications || [])];
+                            next[certIndex] = { ...next[certIndex], credentialId: e.target.value };
+                            setContent({ ...content, certifications: next });
+                          }}
+                          placeholder="Credential ID (optional)"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={cert.url || ""}
+                          onChange={(e) => {
+                            const next = [...(content.certifications || [])];
+                            next[certIndex] = { ...next[certIndex], url: e.target.value };
+                            setContent({ ...content, certifications: next });
+                          }}
+                          placeholder="Verification URL (optional)"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(content.certifications || []).length === 0 ? (
+                    <p className="text-xs text-gray-500">No certifications yet.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mb-6 rounded-lg border border-gray-200 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Projects</h3>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setContent({
+                        ...content,
+                        projects: [
+                          ...(content.projects || []),
+                          { name: "", role: "", url: "", description: "", achievements: [], technologies: [] },
+                        ],
+                      })
+                    }
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    + Add Project
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {(content.projects || []).map((project, projectIndex) => (
+                    <div key={projectIndex} className="rounded-md border border-gray-200 p-3">
+                      <div className="mb-2 flex items-start justify-between">
+                        <span className="text-xs font-medium text-gray-500">Project {projectIndex + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setContent({
+                              ...content,
+                              projects: (content.projects || []).filter((_, i) => i !== projectIndex),
+                            })
+                          }
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={project.name || ""}
+                          onChange={(e) => {
+                            const next = [...(content.projects || [])];
+                            next[projectIndex] = { ...next[projectIndex], name: e.target.value };
+                            setContent({ ...content, projects: next });
+                          }}
+                          placeholder="Project Name"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={project.role || ""}
+                          onChange={(e) => {
+                            const next = [...(content.projects || [])];
+                            next[projectIndex] = { ...next[projectIndex], role: e.target.value };
+                            setContent({ ...content, projects: next });
+                          }}
+                          placeholder="Role"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={project.url || ""}
+                          onChange={(e) => {
+                            const next = [...(content.projects || [])];
+                            next[projectIndex] = { ...next[projectIndex], url: e.target.value };
+                            setContent({ ...content, projects: next });
+                          }}
+                          placeholder="Project URL (optional)"
+                          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <textarea
+                          value={project.description || ""}
+                          onChange={(e) => {
+                            const next = [...(content.projects || [])];
+                            next[projectIndex] = { ...next[projectIndex], description: e.target.value };
+                            setContent({ ...content, projects: next });
+                          }}
+                          rows={2}
+                          placeholder="Project description and impact"
+                          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <input
+                          value={(project.technologies || []).join(", ")}
+                          onChange={(e) => {
+                            const next = [...(content.projects || [])];
+                            next[projectIndex] = {
+                              ...next[projectIndex],
+                              technologies: e.target.value
+                                .split(",")
+                                .map((v) => v.trim())
+                                .filter(Boolean),
+                            };
+                            setContent({ ...content, projects: next });
+                          }}
+                          placeholder="Technologies (comma separated)"
+                          className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {(content.projects || []).length === 0 ? (
+                    <p className="text-xs text-gray-500">No projects yet.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mb-6 rounded-lg border border-gray-200 p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Languages</h3>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setContent({
+                        ...content,
+                        languages: [...(content.languages || []), { name: "", level: "" }],
+                      })
+                    }
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    + Add Language
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(content.languages || []).map((language, languageIndex) => (
+                    <div key={languageIndex} className="grid grid-cols-2 gap-2">
+                      <input
+                        value={language.name || ""}
+                        onChange={(e) => {
+                          const next = [...(content.languages || [])];
+                          next[languageIndex] = { ...next[languageIndex], name: e.target.value };
+                          setContent({ ...content, languages: next });
+                        }}
+                        placeholder="Language"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          value={language.level || ""}
+                          onChange={(e) => {
+                            const next = [...(content.languages || [])];
+                            next[languageIndex] = { ...next[languageIndex], level: e.target.value };
+                            setContent({ ...content, languages: next });
+                          }}
+                          placeholder="Level (e.g. C1, Native)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setContent({
+                              ...content,
+                              languages: (content.languages || []).filter((_, i) => i !== languageIndex),
+                            })
+                          }
+                          className="px-2 text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {(content.languages || []).length === 0 ? (
+                    <p className="text-xs text-gray-500">No languages added yet.</p>
+                  ) : null}
+                </div>
+              </div>
+
               <div
                 ref={skillsRef}
                 className={`rounded-lg p-3 ${
@@ -977,13 +1379,6 @@ export default function ResumeEditorPage() {
           </div>
         </div>
       </main>
-
-      <div className="fixed -left-[10000px] top-0 pointer-events-none opacity-0">
-        <div ref={exportPreviewRef} className="w-[794px] min-h-[1123px] bg-white overflow-hidden">
-          <TemplateRenderer templateId={selectedTemplateId} data={mapToLovableResumeData(content)} />
-        </div>
-      </div>
-
       {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

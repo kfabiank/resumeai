@@ -7,6 +7,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { FileText, Zap, Target, TrendingUp, CheckCircle, Star, ArrowRight, Sparkles, BarChart3, X } from "lucide-react";
 import { isTemplateId, TEMPLATE_CATALOG } from "@/lib/template-catalog";
 import AppFooter from "@/components/AppFooter";
+import TemplateRenderer from "@/app/lovable-templates/TemplateRenderer";
+import { TEMPLATE_PREVIEW_DATA } from "@/lib/template-preview-data";
 
 const SAMPLE_RESUME = `John Doe
 Software Engineer
@@ -65,152 +67,20 @@ SKILLS
 Technical: React, TypeScript, Node.js, Python, AWS, Docker, Kubernetes, CI/CD
 Soft: Leadership, Communication, Agile, Cross-functional Collaboration`;
 
-function TemplatePreview({
-  templateId,
-  colors,
-  compact = true,
-}: {
-  templateId: string;
-  colors: string;
-  compact?: boolean;
-}) {
-  const textSize = compact ? "text-[8px]" : "text-[10px]";
-  const sectionGap = compact ? "space-y-2" : "space-y-3";
-  const pad = compact ? "p-3" : "p-5";
-  switch (templateId) {
-    case "creative-bold":
-      return (
-        <div className={`h-full w-full bg-white flex ${textSize}`}>
-          <div className={`w-1/3 bg-gradient-to-b ${colors} text-white ${pad} ${sectionGap}`}>
-            <p className="font-bold">John Doe</p>
-            <p>Product Designer</p>
-            <p>SF, CA</p>
-            <p>john@email.com</p>
-          </div>
-          <div className={`w-2/3 ${pad} ${sectionGap} text-slate-700`}>
-            <p className="font-semibold text-slate-900">Selected Projects</p>
-            <p>Fintech Redesign (+24% conv.)</p>
-            <p>Design System v3</p>
-            <p className="font-semibold text-slate-900">Toolkit</p>
-            <p>Figma, Framer, After Effects</p>
-          </div>
-        </div>
-      );
-    case "academic-formal":
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
-          <p className="font-bold text-slate-900 text-[11px]">Dr. John Doe</p>
-          <p className="italic">Computational Biology Researcher</p>
-          <div className={`h-[1px] w-full bg-gradient-to-r ${colors}`} />
-          <p><span className="font-semibold text-slate-900">Education:</span> PhD, MIT</p>
-          <p><span className="font-semibold text-slate-900">Publications:</span> Nature, Science</p>
-          <p><span className="font-semibold text-slate-900">Grants:</span> NIH R01, NSF</p>
-        </div>
-      );
-    case "consultant-pro":
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700`}>
-          <div className="grid grid-cols-2 gap-3 h-full">
-            <div className={sectionGap}>
-              <p className="font-bold text-slate-900 text-[11px]">John Doe</p>
-              <p>Management Consultant</p>
-              <p className="font-semibold text-slate-900">Domains</p>
-              <p>Ops, GTM, PMO</p>
-            </div>
-            <div className={sectionGap}>
-              <div className={`rounded bg-gradient-to-r ${colors} text-white p-2`}>
-                <p>Impact</p>
-                <p>+18% margin</p>
-                <p>$2.3M savings</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    case "executive-classic":
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
-          <div className={`h-1.5 w-24 rounded bg-gradient-to-r ${colors}`} />
-          <p className="font-bold text-slate-900 text-[11px]">John Doe, MBA</p>
-          <p>VP Product & Strategy</p>
-          <p className="font-semibold text-slate-900">Board-Level Summary</p>
-          <p>Scaled ARR from $12M to $48M in 3 years.</p>
-          <p className="font-semibold text-slate-900">Leadership</p>
-          <p>Led 60-person cross-functional org.</p>
-        </div>
-      );
-    case "startup-modern":
-      return (
-        <div className={`h-full w-full bg-slate-50 ${pad} ${textSize} text-slate-700`}>
-          <div className={`rounded-xl p-2 bg-gradient-to-r ${colors} text-white mb-2`}>
-            <p className="font-bold">John Doe</p>
-            <p>Founding Engineer</p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <div className="rounded bg-white p-2">
-              <p className="font-semibold">Growth</p>
-              <p>0 to 120k MAU</p>
-            </div>
-            <div className="rounded bg-white p-2">
-              <p className="font-semibold">Speed</p>
-              <p>-41% deploy time</p>
-            </div>
-            <div className="rounded bg-white p-2">
-              <p className="font-semibold">Reliability</p>
-              <p>99.95% uptime</p>
-            </div>
-          </div>
-          <p>React, Node, Postgres, Terraform</p>
-        </div>
-      );
-    case "simple-clean":
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
-          <p className="font-bold text-slate-900 text-[11px]">John Doe</p>
-          <div className="h-[1px] bg-slate-300" />
-          <p>Senior Software Engineer</p>
-          <p className="font-semibold text-slate-900">Experience</p>
-          <p>Acme Tech, Beta Labs, Nova</p>
-          <p className="font-semibold text-slate-900">Skills</p>
-          <p>TypeScript, React, Node, SQL</p>
-        </div>
-      );
-    case "tech-minimal":
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700`}>
-          <div className={`h-7 rounded bg-gradient-to-r ${colors} mb-3`} />
-          <div className="grid grid-cols-[1fr_2fr] gap-3 h-[80%]">
-            <div className={sectionGap}>
-              <p className="font-semibold text-slate-900">Stack</p>
-              <p>Next.js</p>
-              <p>Prisma</p>
-              <p>Postgres</p>
-            </div>
-            <div className={sectionGap}>
-              <p className="font-semibold text-slate-900">Experience Timeline</p>
-              <p>2024 - Staff Engineer</p>
-              <p>2022 - Senior Engineer</p>
-              <p>2020 - Software Engineer</p>
-            </div>
-          </div>
-        </div>
-      );
-    default:
-      return (
-        <div className={`h-full w-full bg-white ${pad} ${textSize} text-slate-700 ${sectionGap}`}>
-          <div className={`rounded ${compact ? "p-2" : "p-3"} bg-gradient-to-r ${colors} text-white`}>
-            <p className="font-bold text-[11px]">John Doe</p>
-            <p>Senior Software Engineer</p>
-          </div>
-          <p className="font-semibold text-slate-900">Summary</p>
-          <p>8+ years building scalable products with React and Node.js.</p>
-          <p className="font-semibold text-slate-900">Experience</p>
-          <p>Led migration to microservices and improved velocity by 35%.</p>
-          <p className="font-semibold text-slate-900">Skills</p>
-          <p>TypeScript, React, PostgreSQL, AWS</p>
-        </div>
-      );
-  }
+function TemplatePreview({ templateId, name }: { templateId: string; name: string }) {
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-slate-100">
+      <div className="absolute inset-2 overflow-hidden rounded-lg border border-slate-300/70 bg-white shadow-xl">
+        <Image
+          src={`/template-thumbnails/${templateId}.png`}
+          alt={`${name} resume template preview`}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+          className="object-cover object-top"
+        />
+      </div>
+    </div>
+  );
 }
 
 function ATSDemo() {
@@ -838,17 +708,19 @@ export default function LandingPage() {
             {TEMPLATE_CATALOG.map((template) => (
               <div key={template.id} className="group">
                 <div className="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 aspect-[8.5/11] mb-3">
-                  <TemplatePreview templateId={template.id} colors={template.colors} />
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${template.colors}`} style={{ opacity: 0.12 }} />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),transparent_55%)]" />
+                  <TemplatePreview templateId={template.id} name={template.name} />
+                  <div className="absolute bottom-3 right-3 z-10 flex flex-wrap justify-end gap-2 rounded-xl bg-slate-900/55 p-1.5 backdrop-blur-sm">
                     {template.isPopular && (
-                      <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-medium flex items-center">
+                      <span className="inline-flex items-center rounded-full bg-amber-500 px-2 py-1 text-[11px] font-semibold text-white">
                         <Star className="h-3 w-3 mr-1 fill-current" /> Popular
                       </span>
                     )}
                     {!template.isPremium ? (
-                      <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">Free</span>
+                      <span className="rounded-full bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">Free</span>
                     ) : (
-                      <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">Pro</span>
+                      <span className="rounded-full bg-violet-600 px-2 py-1 text-[11px] font-semibold text-white">Pro</span>
                     )}
                   </div>
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -902,7 +774,7 @@ export default function LandingPage() {
 
                   <div className="grid md:grid-cols-[1.25fr_0.75fr] gap-6 items-start">
                     <div className="rounded-xl border border-slate-200 overflow-hidden aspect-[8.5/11] bg-white">
-                      <TemplatePreview templateId={previewTemplate.id} colors={previewTemplate.colors} compact={false} />
+                      <TemplateRenderer templateId={previewTemplate.id} data={TEMPLATE_PREVIEW_DATA} />
                     </div>
 
                   <div className="space-y-3">
@@ -1047,7 +919,7 @@ export default function LandingPage() {
             <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-8 hover:shadow-xl transition">
               <div className="text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Premium</h3>
-                <p className="text-gray-600 mb-6">For serious professionals</p>
+                <p className="text-gray-600 mb-6">AI Plus for serious professionals</p>
                 <div className="mb-6">
                   <span className="text-5xl font-bold text-gray-900">$49</span>
                   <span className="text-gray-600">/month</span>
@@ -1066,23 +938,23 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">LinkedIn optimizer</span>
+                  <span className="text-gray-700">AI Job Match Scoring</span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Application tracker</span>
+                  <span className="text-gray-700">AI Resume Rewrite Pro</span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Interview prep AI</span>
+                  <span className="text-gray-700">AI Interview Simulation</span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">White-label templates</span>
+                  <span className="text-gray-700">AI Salary Negotiation Scripts</span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">API access</span>
+                  <span className="text-gray-700">Advanced ATS strategy recommendations</span>
                 </li>
               </ul>
             </div>

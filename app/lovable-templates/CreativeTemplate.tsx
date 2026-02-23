@@ -7,11 +7,20 @@ interface Props {
 
 const CreativeTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
-    <div className="a4-page flex">
+    <div
+      className="a4-page flex min-h-[1123px] sidebar-rail-template"
+      style={{
+        ["--left-rail-width" as any]: "224px",
+        ["--left-rail-color" as any]: "#1a1a2e",
+      }}
+    >
       {/* Left sidebar */}
-      <div className="w-56 p-8" style={{ background: "#1a1a2e", color: "#e2e8f0" }}>
+      <div className="self-stretch w-56 p-8" data-left-rail style={{ background: "#1a1a2e", color: "#e2e8f0" }}>
         <div className="mb-8">
           <div
             className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold"
@@ -68,6 +77,21 @@ const CreativeTemplate = ({ data }: Props) => {
               </li>
             ))}
           </ul>
+          {languages.length > 0 && (
+            <>
+              <h2 className="mb-2 mt-4 text-xs font-bold uppercase tracking-widest" style={{ color: "#f59e0b" }}>
+                Languages
+              </h2>
+              <ul className="space-y-1 text-xs" style={{ color: "#94a3b8" }}>
+                {languages.map((language, i) => (
+                  <li key={`lang-${i}`} className="flex items-center gap-2">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#f59e0b" }} />
+                    {language}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       </div>
 

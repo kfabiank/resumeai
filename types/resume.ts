@@ -26,6 +26,25 @@ export interface ResumeData {
     graduationDate: string;
     gpa?: string;
   }>;
+  certifications?: Array<{
+    name: string;
+    issuer?: string;
+    issueDate?: string;
+    credentialId?: string;
+    url?: string;
+  }>;
+  projects?: Array<{
+    name: string;
+    role?: string;
+    url?: string;
+    description?: string;
+    achievements?: string[];
+    technologies?: string[];
+  }>;
+  languages?: Array<{
+    name: string;
+    level?: string;
+  }>;
   skills: {
     technical: string[];
     soft: string[];

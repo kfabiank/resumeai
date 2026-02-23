@@ -7,6 +7,9 @@ interface Props {
 
 const ExecutiveTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-12" style={{ fontFamily: "'Playfair Display', 'Inter', serif" }}>
@@ -102,6 +105,14 @@ const ExecutiveTemplate = ({ data }: Props) => {
             </span>
           ))}
         </div>
+        {languages.length > 0 && (
+          <div className="mt-2 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#6b7280", fontFamily: "'Inter', sans-serif" }}>Languages</p>
+            <p className="mt-1 text-xs" style={{ color: "#6b7280", fontFamily: "'Inter', sans-serif" }}>
+              {languages.join(" · ")}
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

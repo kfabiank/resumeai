@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-21T21:38:21.380Z",
+  "generatedAt": "2026-02-23T14:19:31.190Z",
   "baseUrl": "http://127.0.0.1:3000",
   "templates": [
     {
@@ -101,6 +101,26 @@
     {
       "id": "impact-template",
       "file": "/qa-design-previews/impact-template.png"
+    },
+    {
+      "id": "noir-elegance",
+      "file": "/qa-design-previews/noir-elegance.png"
+    },
+    {
+      "id": "swiss-precision",
+      "file": "/qa-design-previews/swiss-precision.png"
+    },
+    {
+      "id": "architect-blueprint",
+      "file": "/qa-design-previews/architect-blueprint.png"
+    },
+    {
+      "id": "vogue-editorial",
+      "file": "/qa-design-previews/vogue-editorial.png"
+    },
+    {
+      "id": "carbon-terminal",
+      "file": "/qa-design-previews/carbon-terminal.png"
     }
   ]
 }

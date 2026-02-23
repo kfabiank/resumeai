@@ -94,6 +94,10 @@ function previewContent() {
       ],
       soft: ["Leadership", "Cross-functional Communication", "Mentoring", "Strategic Planning"],
     },
+    languages: [
+      { name: "English", level: "Native" },
+      { name: "Spanish", level: "Professional" },
+    ],
     keywords: ["SaaS", "Scalability", "Performance", "Microservices", "Experimentation"],
   };
 }

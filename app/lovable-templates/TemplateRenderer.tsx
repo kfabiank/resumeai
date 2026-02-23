@@ -20,6 +20,7 @@ import StartupTemplate from '@/app/lovable-templates/StartupTemplate';
 import UXDesignerTemplate from '@/app/lovable-templates/UXDesignerTemplate';
 import BoardroomTemplate from '@/app/lovable-templates/BoardroomTemplate';
 import ImpactTemplate from '@/app/lovable-templates/ImpactTemplate';
+import Batch3Template from '@/app/lovable-templates/Batch3Template';
 import type { ResumeData } from '@/types/resume';
 
 type Props = {
@@ -27,56 +28,133 @@ type Props = {
   data: ResumeData;
 };
 
+const COMMON_LANGUAGES = [
+  "english",
+  "spanish",
+  "french",
+  "german",
+  "portuguese",
+  "italian",
+  "mandarin",
+  "chinese",
+  "japanese",
+  "korean",
+  "arabic",
+  "hindi",
+  "russian",
+];
+
+function parseLanguageLabel(raw: string) {
+  const text = `${raw || ""}`.trim();
+  if (!text) return null;
+  const match = text.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+  if (match) {
+    return { name: match[1].trim(), level: match[2].trim(), label: text };
+  }
+  return { name: text, level: "", label: text };
+}
+
+function looksLikeLanguage(raw: string) {
+  const parsed = parseLanguageLabel(raw);
+  if (!parsed) return false;
+  const lower = parsed.name.toLowerCase();
+  return COMMON_LANGUAGES.some((lang) => lower === lang || lower.startsWith(`${lang} `));
+}
+
 export default function TemplateRenderer({ templateId, data }: Props) {
+  const normalizedLanguages = (data.languages || [])
+    .map((lang: any) => ({
+      name: typeof lang === "string" ? lang : lang?.name || lang?.language || "",
+      level: typeof lang === "string" ? "" : lang?.level || lang?.proficiency || "",
+    }))
+    .filter((lang) => lang.name);
+
+  const softSkillsRaw = Array.isArray(data.skills?.soft) ? data.skills.soft : [];
+  const inferredLanguages =
+    normalizedLanguages.length > 0
+      ? []
+      : softSkillsRaw
+          .filter((skill) => looksLikeLanguage(skill))
+          .map((skill) => parseLanguageLabel(skill))
+          .filter(Boolean)
+          .map((lang) => ({ name: lang!.name, level: lang!.level }));
+
+  const finalLanguages = normalizedLanguages.length > 0 ? normalizedLanguages : inferredLanguages;
+  const languageLabelSet = new Set(
+    finalLanguages
+      .map((lang) => `${lang.name}${lang.level ? ` (${lang.level})` : ""}`.toLowerCase().trim())
+      .filter(Boolean)
+  );
+  const cleanSoftSkills = softSkillsRaw.filter(
+    (skill) =>
+      !languageLabelSet.has(`${skill || ""}`.toLowerCase().trim()) &&
+      !looksLikeLanguage(skill)
+  );
+
+  const normalizedData: ResumeData = {
+    ...data,
+    languages: finalLanguages,
+    skills: {
+      technical: Array.isArray(data.skills?.technical) ? data.skills.technical : [],
+      soft: cleanSoftSkills,
+    },
+  };
+
   switch (templateId) {
     case 'tech-minimal':
     case 'startup-modern':
-      return <TechTemplate data={data} />;
+      return <TechTemplate data={normalizedData} />;
     case 'startup-template':
-      return <StartupTemplate data={data} />;
+      return <StartupTemplate data={normalizedData} />;
     case 'data-science-template':
-      return <DataScienceTemplate data={data} />;
+      return <DataScienceTemplate data={normalizedData} />;
     case 'devops-template':
-      return <DevOpsTemplate data={data} />;
+      return <DevOpsTemplate data={normalizedData} />;
     case 'frontend-template':
-      return <FrontEndTemplate data={data} />;
+      return <FrontEndTemplate data={normalizedData} />;
     case 'executive-classic':
-      return <ExecutiveTemplate data={data} />;
+      return <ExecutiveTemplate data={normalizedData} />;
     case 'creative-bold':
-      return <CreativeTemplate data={data} />;
+      return <CreativeTemplate data={normalizedData} />;
     case 'ux-designer-template':
-      return <UXDesignerTemplate data={data} />;
+      return <UXDesignerTemplate data={normalizedData} />;
     case 'marketing-template':
-      return <MarketingTemplate data={data} />;
+      return <MarketingTemplate data={normalizedData} />;
     case 'academic-formal':
-      return <AcademicTemplate data={data} />;
+      return <AcademicTemplate data={normalizedData} />;
     case 'accountant-template':
-      return <AccountantTemplate data={data} />;
+      return <AccountantTemplate data={normalizedData} />;
     case 'consultant-template':
-      return <ConsultantTemplate data={data} />;
+      return <ConsultantTemplate data={normalizedData} />;
     case 'finance-template':
-      return <FinanceTemplate data={data} />;
+      return <FinanceTemplate data={normalizedData} />;
     case 'legal-template':
-      return <LegalTemplate data={data} />;
+      return <LegalTemplate data={normalizedData} />;
     case 'paralegal-template':
-      return <ParalegalTemplate data={data} />;
+      return <ParalegalTemplate data={normalizedData} />;
     case 'medical-template':
-      return <MedicalTemplate data={data} />;
+      return <MedicalTemplate data={normalizedData} />;
     case 'nurse-template':
-      return <NurseTemplate data={data} />;
+      return <NurseTemplate data={normalizedData} />;
     case 'product-manager-template':
-      return <ProductManagerTemplate data={data} />;
+      return <ProductManagerTemplate data={normalizedData} />;
     case 'sales-template':
-      return <SalesTemplate data={data} />;
+      return <SalesTemplate data={normalizedData} />;
     case 'boardroom-template':
-      return <BoardroomTemplate data={data} />;
+      return <BoardroomTemplate data={normalizedData} />;
     case 'impact-template':
-      return <ImpactTemplate data={data} />;
+      return <ImpactTemplate data={normalizedData} />;
+    case 'noir-elegance':
+    case 'swiss-precision':
+    case 'architect-blueprint':
+    case 'vogue-editorial':
+    case 'carbon-terminal':
+      return <Batch3Template templateId={templateId || ""} data={normalizedData} />;
     case 'consultant-pro':
-      return <ConsultantTemplate data={data} />;
+      return <ConsultantTemplate data={normalizedData} />;
     case 'simple-clean':
     case 'modern-professional':
     default:
-      return <ModernTemplate data={data} />;
+      return <ModernTemplate data={normalizedData} />;
   }
 }

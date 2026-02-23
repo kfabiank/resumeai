@@ -33,10 +33,11 @@ const features: PlanFeature[] = [
   { name: "Job Application Tracker", free: "10 apps", pro: "Unlimited", premium: "Unlimited" },
   { name: "PDF Export", free: true, pro: true, premium: true },
   { name: "DOCX Export", free: false, pro: true, premium: true },
-  { name: "Custom Branding", free: false, pro: false, premium: true },
-  { name: "LinkedIn Optimization", free: false, pro: false, premium: true },
+  { name: "AI Resume Rewrite Pro", free: false, pro: false, premium: true },
+  { name: "AI Job Match Scoring", free: false, pro: false, premium: true },
+  { name: "AI Interview Simulation", free: false, pro: false, premium: true },
+  { name: "AI Salary Negotiation Scripts", free: false, pro: false, premium: true },
   { name: "Priority Support", free: false, pro: true, premium: true },
-  // { name: "1-on-1 Resume Review", free: false, pro: false, premium: true },
 ];
 
 const faqs = [
@@ -393,7 +394,7 @@ export default function PricingPage() {
                 {prices.premium.name}
                 <Star className="h-5 w-5 text-yellow-400 ml-2" />
               </h3>
-              <p className="text-purple-200 text-sm">For serious career advancement</p>
+              <p className="text-purple-200 text-sm">AI Plus for serious career acceleration</p>
             </div>
 
             <div className="mb-6">
@@ -420,7 +421,7 @@ export default function PricingPage() {
                 </>
               ) : (
                 <>
-                  Go Premium
+                  Go AI Plus
                   <Sparkles className="h-4 w-4 ml-2" />
                 </>
               )}
@@ -433,23 +434,23 @@ export default function PricingPage() {
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />
-                <span>Custom branding</span>
+                <span>AI Resume Rewrite Pro</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />
-                <span>LinkedIn profile optimization</span>
+                <span>AI Job Match Scoring</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />
-                <span>1-on-1 resume review</span>
+                <span>AI Interview Simulation</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />
-                <span>Interview preparation tips</span>
+                <span>AI Salary Negotiation Scripts</span>
               </li>
               <li className="flex items-start">
                 <Check className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />
-                <span>Salary negotiation guide</span>
+                <span>Advanced ATS strategy recommendations</span>
               </li>
               <li className="flex items-start">
                 <Shield className="h-5 w-5 text-purple-300 mr-3 flex-shrink-0" />

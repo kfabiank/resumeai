@@ -7,6 +7,9 @@ interface Props {
 
 const LegalTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-12" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
@@ -80,6 +83,14 @@ const LegalTemplate = ({ data }: Props) => {
         <p className="text-xs" style={{ color: "#475569", fontFamily: "'Inter', sans-serif" }}>
           {[...skills.technical, ...skills.soft].join(" · ")}
         </p>
+        {languages.length > 0 && (
+          <div className="mt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#475569", fontFamily: "'Inter', sans-serif" }}>Languages</p>
+            <p className="mt-1 text-xs" style={{ color: "#475569", fontFamily: "'Inter', sans-serif" }}>
+              {languages.join(" · ")}
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

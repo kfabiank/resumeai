@@ -60,6 +60,10 @@ const PREVIEW_DATA: ResumeData = {
     technical: ["TypeScript", "Next.js", "Node.js", "PostgreSQL", "AWS"],
     soft: ["Leadership", "Communication", "Mentoring"],
   },
+  languages: [
+    { name: "English", level: "Native" },
+    { name: "Spanish", level: "Professional" },
+  ],
   keywords: ["SaaS", "ATS", "Optimization"],
 };
 

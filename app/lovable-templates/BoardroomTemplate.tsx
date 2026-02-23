@@ -7,6 +7,9 @@ interface Props {
 
 const BoardroomTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-10" style={{ fontFamily: "'Inter', sans-serif", background: "#fcfcfb" }}>
@@ -109,6 +112,20 @@ const BoardroomTemplate = ({ data }: Props) => {
               </li>
             ))}
           </ul>
+          {languages.length > 0 && (
+            <>
+              <h3 className="mb-2 mt-3 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#8a6d3b" }}>
+                Languages
+              </h3>
+              <ul className="space-y-1">
+                {languages.map((language, i) => (
+                  <li key={`lang-${i}`} className="text-xs" style={{ color: "#4f5a6c" }}>
+                    {language}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       </div>
     </div>

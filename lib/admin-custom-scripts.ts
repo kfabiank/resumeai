@@ -52,6 +52,14 @@ export const ADMIN_CUSTOM_SCRIPTS: AdminCustomScript[] = [
     runAllowed: true,
   },
   {
+    script: "templates:seed-batch3",
+    command: "npm run templates:seed-batch3",
+    title: "Seed Template Batch 3",
+    description: "Inserta el tercer lote de templates en base de datos (Noir, Swiss, Architect, Vogue, Carbon).",
+    category: "templates",
+    runAllowed: true,
+  },
+  {
     script: "test:e2e:synthetic",
     command: "QA_TEST_PASSWORD=\"...\" npm run test:e2e:synthetic",
     title: "Synthetic E2E (All Accounts)",

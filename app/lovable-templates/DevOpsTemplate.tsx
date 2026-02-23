@@ -7,6 +7,9 @@ interface Props {
 
 const DevOpsTemplate = ({ data }: Props) => {
   const { personalInfo, professionalSummary, experiences, education, skills } = data;
+  const languages = (data.languages || [])
+    .map((lang: any) => typeof lang === "string" ? lang : ((lang && (lang.name || "")) + ((lang && lang.level) ? (" (" + lang.level + ")") : "")))
+    .filter(Boolean);
 
   return (
     <div className="a4-page p-10" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", background: "#0f172a", color: "#e2e8f0" }}>
@@ -72,6 +75,14 @@ const DevOpsTemplate = ({ data }: Props) => {
         <section className="flex-1">
           <p className="text-xs" style={{ color: "#38bdf8" }}>$ echo $TRAITS</p>
           <p className="mt-1 text-xs" style={{ color: "#64748b" }}>{skills.soft.join(" | ")}</p>
+          {languages.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#64748b" }}>Languages</p>
+              <p className="mt-1 text-xs" style={{ color: "#64748b" }}>
+                {languages.join(" · ")}
+              </p>
+            </div>
+          )}
         </section>
       </div>
     </div>

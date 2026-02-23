@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { PLAN_FEATURES } from '@/lib/stripe';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { buildResumeDownloadName } from '@/lib/resume-render';
 
 type ResumeContent = {
   personalInfo?: {
@@ -28,6 +29,25 @@ type ResumeContent = {
     institution?: string;
     graduationDate?: string;
     gpa?: string;
+  }>;
+  certifications?: Array<{
+    name?: string;
+    issuer?: string;
+    issueDate?: string;
+    credentialId?: string;
+    url?: string;
+  }>;
+  projects?: Array<{
+    name?: string;
+    role?: string;
+    url?: string;
+    description?: string;
+    achievements?: string[];
+    technologies?: string[];
+  }>;
+  languages?: Array<{
+    name?: string;
+    level?: string;
   }>;
   skills?: {
     technical?: string[];
@@ -156,6 +176,51 @@ export async function POST(
       }
     }
 
+    if (content.certifications?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, text: 'Certifications' }));
+      for (const cert of content.certifications) {
+        const title = `${cert.name || ''}${cert.issuer ? ` - ${cert.issuer}` : ''}`.trim();
+        if (title) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: title, bold: true })],
+            })
+          );
+        }
+        const meta = [cert.issueDate, cert.credentialId ? `ID: ${cert.credentialId}` : null, cert.url]
+          .filter(Boolean)
+          .join(' | ');
+        if (meta) children.push(new Paragraph(meta));
+      }
+    }
+
+    if (content.projects?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, text: 'Projects' }));
+      for (const project of content.projects) {
+        const title = `${project.name || ''}${project.role ? ` (${project.role})` : ''}`.trim();
+        if (title) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: title, bold: true })],
+            })
+          );
+        }
+        if (project.description) children.push(new Paragraph(project.description));
+        if (project.technologies?.length) {
+          children.push(new Paragraph(`Technologies: ${project.technologies.join(', ')}`));
+        }
+        if (project.url) children.push(new Paragraph(project.url));
+      }
+    }
+
+    if (content.languages?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, text: 'Languages' }));
+      for (const lang of content.languages) {
+        const line = `${lang.name || ''}${lang.level ? ` - ${lang.level}` : ''}`.trim();
+        if (line) children.push(new Paragraph(line));
+      }
+    }
+
     const doc = new Document({
       sections: [{ children }],
     });
@@ -171,7 +236,7 @@ export async function POST(
       },
     });
 
-    const safeName = `${resume.title || 'resume'}`.replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'resume';
+    const safeName = buildResumeDownloadName(personal.name, resume.title || 'resume');
     const fileBuffer = await Packer.toBuffer(doc);
     const fileData = new Uint8Array(fileBuffer);
 

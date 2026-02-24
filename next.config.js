@@ -60,7 +60,7 @@ const securityHeaders = [
 
 const nextConfig = {
   // Keep build artifacts in a dedicated local folder and allow overrides for CI/E2E.
-  distDir: process.env.NEXT_DIST_DIR || (process.env.VERCEL ? ".next" : ".next-user"),
+  distDir: process.env.VERCEL ? ".next" : process.env.NEXT_DIST_DIR || ".next-user",
   images: { domains: ["localhost"] },
   async headers() {
     return [

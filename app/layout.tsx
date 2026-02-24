@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import MetaPixel from "@/components/MetaPixel";
+import UnderConstruction from "@/components/UnderConstruction";
 import "./globals.css";
 import {
   defaultDescription,
@@ -12,6 +13,8 @@ import {
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+const isUnderConstruction =
+  process.env.NEXT_PUBLIC_UNDER_CONSTRUCTION === "true";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -88,6 +91,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  if (isUnderConstruction) {
+    return (
+      <html lang="en">
+        <body className="antialiased">
+          <UnderConstruction />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en">
       <body className="antialiased">

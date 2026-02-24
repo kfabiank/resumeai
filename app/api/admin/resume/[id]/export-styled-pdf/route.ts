@@ -96,10 +96,9 @@ export async function POST(
     const personName = (resume.content as any)?.personalInfo?.name || "";
     const fileName = buildResumeDownloadName(personName, resume.title || "resume");
 
-    const pdfData = Uint8Array.from(pdfBuffer);
-    const pdfArrayBuffer = pdfData.buffer;
+    const pdfBody = new Uint8Array(pdfBuffer);
 
-    return new NextResponse(pdfArrayBuffer, {
+    return new NextResponse(pdfBody, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

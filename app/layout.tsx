@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 import {
   defaultDescription,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/seo";
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -103,6 +105,7 @@ gtag('config', '${gaMeasurementId}', { page_path: window.location.pathname });`}
             </Script>
           </>
         ) : null}
+        {metaPixelId ? <MetaPixel pixelId={metaPixelId} /> : null}
 
         <Script id="jsonld-org" type="application/ld+json" strategy="afterInteractive">
           {JSON.stringify(organizationSchema)}

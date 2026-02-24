@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import Image from "next/image";
 
 export default function AppFooter() {
   return (
@@ -8,10 +8,13 @@ export default function AppFooter() {
         <div className="mb-8 grid gap-8 md:grid-cols-4">
           <div>
             <div className="mb-4 flex items-center space-x-2">
-              <div className="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 p-2">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">ResumeAI</span>
+              <Image
+                src="/logo-b-neural-dark.svg"
+                alt="Resuify"
+                width={150}
+                height={34}
+                className="h-12 w-auto"
+              />
             </div>
             <p className="text-sm">
               AI-powered resume builder focused on ATS optimization and conversion-ready job applications.

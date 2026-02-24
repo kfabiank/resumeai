@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { FileText } from "lucide-react";
 import UserNavMenu from "@/components/UserNavMenu";
 
 type AppTopNavProps = {
@@ -112,12 +112,13 @@ export default function AppTopNav({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href={brandHref} className="flex items-center space-x-3">
-            <div className="rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 p-2 shadow-lg shadow-blue-900/40">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-xl font-bold text-transparent">
-              ResumeAI
-            </span>
+            <Image
+              src="/logo-b-neural-dark.svg"
+              alt="Resuify"
+              width={150}
+              height={34}
+              className="h-12 w-auto"
+            />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -133,7 +134,11 @@ export default function AppTopNav({
 
             {isAuthenticated ? (
               <div className="ml-1">
-                <UserNavMenu name={resolvedUser.name} planType={resolvedUser.planType} />
+                <UserNavMenu
+                  name={resolvedUser.name}
+                  planType={resolvedUser.planType}
+                  variant="dark"
+                />
               </div>
             ) : (
               <div className="flex items-center gap-2">

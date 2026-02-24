@@ -10,6 +10,7 @@ import AdminQABulkDownloads from "./AdminQABulkDownloads";
 import AdminScriptsPanel from "./AdminScriptsPanel";
 import { ADMIN_CUSTOM_SCRIPTS } from "@/lib/admin-custom-scripts";
 import StyledPdfDownloadButton from "./StyledPdfDownloadButton";
+import AdminPremiumAiLab from "./AdminPremiumAiLab";
 
 export const dynamic = "force-dynamic";
 
@@ -158,6 +159,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     resumeId: item.resume?.id || null,
   }));
 
+  const premiumAiResumes = (
+    selectedUser?.resumes?.length
+      ? selectedUser.resumes.map((resume) => ({
+          id: resume.id,
+          title: resume.title,
+          templateId: resume.templateId,
+          atsScore: resume.atsScore ?? null,
+        }))
+      : qaPreviewResumes.map((resume) => ({
+          id: resume.id,
+          title: resume.title,
+          templateId: resume.templateId,
+          atsScore: null,
+        }))
+  ).slice(0, 50);
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -304,6 +321,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </section>
 
         <TemplateAccessManager />
+        <AdminPremiumAiLab resumes={premiumAiResumes} />
         <AdminScriptsPanel scripts={ADMIN_CUSTOM_SCRIPTS} />
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

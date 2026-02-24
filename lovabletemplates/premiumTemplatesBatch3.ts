@@ -1,4 +1,4 @@
-import { PremiumTemplate } from "./premiumTemplates";
+import type { PremiumTemplate } from "@/lib/premiumTemplates";
 
 // ── 1. Noir Elegance ──
 const noirEleganceHtml = `

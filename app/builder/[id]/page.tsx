@@ -20,6 +20,8 @@ type ResumeApiResponse = {
   title: string;
   templateId: string;
   atsScore: number;
+  jobTitle?: string | null;
+  jobDescription?: string | null;
   content: ResumeContent;
   user?: {
     planType: string;

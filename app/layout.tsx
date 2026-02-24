@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import {
@@ -10,7 +9,6 @@ import {
   siteUrl,
 } from "@/lib/seo";
 
-const inter = Inter({ subsets: ["latin"] });
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const organizationSchema = {
@@ -18,7 +16,7 @@ const organizationSchema = {
   "@type": "Organization",
   name: siteName,
   url: siteUrl,
-  logo: `${siteUrl}/linkedin-temp-logo.png`,
+  logo: `${siteUrl}/logo-b-neural.svg`,
   sameAs: [],
 };
 
@@ -90,7 +88,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="antialiased">
         {gaMeasurementId ? (
           <>
             <Script

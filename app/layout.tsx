@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import Script from "next/script";
+import MetaPixel from "@/components/MetaPixel";
 import UnderConstruction from "@/components/UnderConstruction";
 import "./globals.css";
 import {
@@ -11,8 +11,8 @@ import {
   siteUrl,
 } from "@/lib/seo";
 
-const inter = Inter({ subsets: ["latin"] });
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 const isUnderConstruction =
   process.env.NEXT_PUBLIC_UNDER_CONSTRUCTION === "true";
 
@@ -21,7 +21,7 @@ const organizationSchema = {
   "@type": "Organization",
   name: siteName,
   url: siteUrl,
-  logo: `${siteUrl}/linkedin-temp-logo.png`,
+  logo: `${siteUrl}/logo-b-neural.svg`,
   sameAs: [],
 };
 
@@ -94,7 +94,7 @@ export default function RootLayout({
   if (isUnderConstruction) {
     return (
       <html lang="en">
-        <body className={inter.className}>
+        <body className="antialiased">
           <UnderConstruction />
         </body>
       </html>
@@ -103,7 +103,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="antialiased">
         {gaMeasurementId ? (
           <>
             <Script
@@ -118,6 +118,7 @@ gtag('config', '${gaMeasurementId}', { page_path: window.location.pathname });`}
             </Script>
           </>
         ) : null}
+        {metaPixelId ? <MetaPixel pixelId={metaPixelId} /> : null}
 
         <Script id="jsonld-org" type="application/ld+json" strategy="afterInteractive">
           {JSON.stringify(organizationSchema)}

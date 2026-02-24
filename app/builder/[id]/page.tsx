@@ -20,6 +20,8 @@ type ResumeApiResponse = {
   title: string;
   templateId: string;
   atsScore: number;
+  jobTitle?: string | null;
+  jobDescription?: string | null;
   content: ResumeContent;
   user?: {
     planType: string;
@@ -35,6 +37,21 @@ type AtsUsage = {
   blocked: boolean;
   counted?: boolean;
 };
+
+type PremiumAiFeature =
+  | "resume_rewrite_pro"
+  | "job_match_scoring"
+  | "interview_simulation"
+  | "salary_negotiation_scripts"
+  | "advanced_ats_strategy";
+
+type PremiumAiUsage = {
+  used: number;
+  limit: number;
+  remaining: number;
+};
+
+type NoticeTone = "info" | "success" | "error";
 
 function mapToLovableResumeData(content: ResumeContent): ResumeData {
   const normalizedLanguages = (content.languages || [])
@@ -190,11 +207,48 @@ export default function ResumeEditorPage() {
   const [isScanningAts, setIsScanningAts] = useState(false);
   const [atsResult, setAtsResult] = useState<AtsScanResult | null>(null);
   const [atsUsage, setAtsUsage] = useState<AtsUsage | null>(null);
+  const [premiumAiLoading, setPremiumAiLoading] = useState(false);
+  const [premiumAiResult, setPremiumAiResult] = useState<any>(null);
+  const [premiumAiFeature, setPremiumAiFeature] = useState<PremiumAiFeature>("job_match_scoring");
+  const [premiumAiContextNote, setPremiumAiContextNote] = useState("");
+  const [premiumAiUsage, setPremiumAiUsage] = useState<PremiumAiUsage | null>(null);
+  const [isApplyingPremiumAi, setIsApplyingPremiumAi] = useState(false);
+  const [keepOriginalOnApply, setKeepOriginalOnApply] = useState(true);
+  const [originalResumeBackup, setOriginalResumeBackup] = useState<ResumeContent | null>(null);
+  const [noticeModal, setNoticeModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    tone: NoticeTone;
+    actionLabel?: string;
+    actionHref?: string;
+  }>({
+    open: false,
+    title: "",
+    message: "",
+    tone: "info",
+  });
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalMode, setUpgradeModalMode] = useState<"soft" | "hard">("soft");
   const summaryRef = useRef<HTMLTextAreaElement | null>(null);
   const experienceRef = useRef<HTMLDivElement | null>(null);
   const skillsRef = useRef<HTMLDivElement | null>(null);
+
+  const showNotice = (
+    tone: NoticeTone,
+    title: string,
+    message: string,
+    action?: { label: string; href: string }
+  ) => {
+    setNoticeModal({
+      open: true,
+      tone,
+      title,
+      message,
+      actionLabel: action?.label,
+      actionHref: action?.href,
+    });
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -214,6 +268,7 @@ export default function ResumeEditorPage() {
         setResume(data);
         const normalized = normalizeResumeContent(data.content);
         setContent(normalized);
+        setOriginalResumeBackup(null);
         setSelectedTemplateId(data.templateId || "modern-professional");
         setUserPlan(data.user?.planType || "free");
         setAtsResult(runAtsScan(normalized));
@@ -292,7 +347,7 @@ export default function ResumeEditorPage() {
       );
       setSelectedTemplateId(body.templateId || selectedTemplateId);
       if (opts?.showSuccessToast) {
-        alert("Resume saved successfully!");
+        showNotice("success", "Saved", "Resume saved successfully.");
       }
     } catch (error) {
       throw error;
@@ -305,7 +360,7 @@ export default function ResumeEditorPage() {
     try {
       await persistResume({ showSuccessToast: true });
     } catch (error: any) {
-      alert(error?.message || "Failed to save resume");
+      showNotice("error", "Save Failed", error?.message || "Failed to save resume");
     }
   };
 
@@ -343,7 +398,7 @@ export default function ResumeEditorPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      alert(error?.message || "Failed to export PDF");
+      showNotice("error", "Export Failed", error?.message || "Failed to export PDF");
     } finally {
       setIsExporting(false);
     }
@@ -381,7 +436,7 @@ export default function ResumeEditorPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      alert(error?.message || "Failed to export DOCX");
+      showNotice("error", "Export Failed", error?.message || "Failed to export DOCX");
     } finally {
       setIsExportingDocx(false);
     }
@@ -412,12 +467,12 @@ export default function ResumeEditorPage() {
       setIsPublicResume(true);
       if (shareData?.shareUrl) {
         await navigator.clipboard.writeText(shareData.shareUrl);
-        alert("Share link copied to clipboard.");
+        showNotice("success", "Share Link", "Share link copied to clipboard.");
       } else {
-        alert("Resume shared.");
+        showNotice("success", "Shared", "Resume shared.");
       }
     } catch (error: any) {
-      alert(error?.message || "Failed to share resume");
+      showNotice("error", "Share Failed", error?.message || "Failed to share resume");
     } finally {
       setIsSharing(false);
     }
@@ -488,10 +543,96 @@ export default function ResumeEditorPage() {
         setShowUpgradeModal(true);
       }
     } catch (error: any) {
-      alert(error?.message || "Failed to run ATS scan");
+      showNotice("error", "ATS Scan Failed", error?.message || "Failed to run ATS scan");
     } finally {
       setIsScanningAts(false);
     }
+  };
+
+  const handleRunPremiumAi = async (feature: PremiumAiFeature) => {
+    if (!content) return;
+
+    setPremiumAiFeature(feature);
+    setPremiumAiLoading(true);
+    try {
+      const response = await fetch(`/api/resume/${id}/premium-ai`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature,
+          content,
+          jobDescription: resume?.jobDescription || "",
+          targetRole: resume?.jobTitle || content.personalInfo.headline || "",
+          contextNote: premiumAiContextNote,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (response.status === 403) {
+        showNotice(
+          "info",
+          "Premium Required",
+          body?.message || "This feature requires Premium plan.",
+          { label: "Upgrade Now", href: "/pricing" }
+        );
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(body.error || body.message || "Failed to run Premium AI");
+      }
+      setPremiumAiResult(body.result || null);
+      setPremiumAiUsage(body.usage || null);
+    } catch (error: any) {
+      showNotice("error", "Premium AI Failed", error?.message || "Failed to run Premium AI");
+    } finally {
+      setPremiumAiLoading(false);
+    }
+  };
+
+  const handleApplyPremiumAiResult = async () => {
+    if (!premiumAiResult) return;
+    if (premiumAiFeature !== "resume_rewrite_pro" && premiumAiFeature !== "advanced_ats_strategy") {
+      showNotice(
+        "info",
+        "Apply Not Available",
+        "Apply is currently available for Resume Rewrite Pro and Advanced ATS Strategy."
+      );
+      return;
+    }
+    setIsApplyingPremiumAi(true);
+    try {
+      if (keepOriginalOnApply && content && !originalResumeBackup) {
+        setOriginalResumeBackup(JSON.parse(JSON.stringify(content)) as ResumeContent);
+      }
+      const response = await fetch(`/api/resume/${id}/premium-ai/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature: premiumAiFeature,
+          result: premiumAiResult,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || body.message || "Failed to apply AI result");
+      }
+      const normalized = normalizeResumeContent(body.content);
+      setContent(normalized);
+      setAtsResult(runAtsScan(normalized));
+      showNotice("success", "Applied", "Premium AI changes applied to resume.");
+    } catch (error: any) {
+      showNotice("error", "Apply Failed", error?.message || "Failed to apply Premium AI result");
+    } finally {
+      setIsApplyingPremiumAi(false);
+    }
+  };
+
+  const handleRestoreOriginalResume = () => {
+    if (!originalResumeBackup) return;
+    const restored = JSON.parse(JSON.stringify(originalResumeBackup)) as ResumeContent;
+    setContent(restored);
+    setAtsResult(runAtsScan(restored));
+    setOriginalResumeBackup(null);
+    showNotice("success", "Original Restored", "Your original resume content has been restored.");
   };
 
   const jumpToArea = (area: AtsArea) => {
@@ -701,6 +842,130 @@ export default function ResumeEditorPage() {
                     </div>
                   ))}
                 </div>
+              ) : null}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-gray-900">Premium AI Studio</h3>
+                {userPlan === "premium" ? (
+                  <span className="rounded-full px-2 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700">
+                    Premium Enabled
+                  </span>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="rounded-full px-2 py-1 text-xs font-semibold bg-violet-100 text-violet-700 hover:bg-violet-200 transition"
+                  >
+                    Premium Required
+                  </Link>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                AI Resume Rewrite Pro, Job Match Scoring, Interview Simulation, Salary Negotiation Scripts, and advanced ATS strategy.
+              </p>
+
+              <textarea
+                value={premiumAiContextNote}
+                onChange={(e) => setPremiumAiContextNote(e.target.value)}
+                rows={2}
+                placeholder="Optional context (role level, compensation goal, interview stage...)"
+                className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm"
+              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                <button
+                  onClick={() => handleRunPremiumAi("resume_rewrite_pro")}
+                  disabled={premiumAiLoading || userPlan !== "premium"}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  AI Resume Rewrite Pro
+                </button>
+                <button
+                  onClick={() => handleRunPremiumAi("job_match_scoring")}
+                  disabled={premiumAiLoading || userPlan !== "premium"}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  AI Job Match Scoring
+                </button>
+                <button
+                  onClick={() => handleRunPremiumAi("interview_simulation")}
+                  disabled={premiumAiLoading || userPlan !== "premium"}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  AI Interview Simulation
+                </button>
+                <button
+                  onClick={() => handleRunPremiumAi("salary_negotiation_scripts")}
+                  disabled={premiumAiLoading || userPlan !== "premium"}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  AI Salary Negotiation Scripts
+                </button>
+                <button
+                  onClick={() => handleRunPremiumAi("advanced_ats_strategy")}
+                  disabled={premiumAiLoading || userPlan !== "premium"}
+                  className="sm:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Advanced ATS Strategy Recommendations
+                </button>
+              </div>
+
+              {premiumAiLoading ? (
+                <p className="text-sm text-blue-700">Running {premiumAiFeature.replaceAll("_", " ")}...</p>
+              ) : null}
+              {premiumAiUsage ? (
+                <p className="text-xs text-gray-600 mb-2">
+                  Usage this month: {premiumAiUsage.used}/{premiumAiUsage.limit} · Remaining {premiumAiUsage.remaining}
+                </p>
+              ) : null}
+              {userPlan !== "premium" ? (
+                <div className="mb-3">
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-700 transition"
+                  >
+                    Upgrade to Premium
+                  </Link>
+                </div>
+              ) : null}
+              <div className="mb-2 flex flex-wrap items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={keepOriginalOnApply}
+                    onChange={(e) => setKeepOriginalOnApply(e.target.checked)}
+                    className="h-4 w-4 accent-blue-600"
+                  />
+                  Keep original resume backup when applying AI changes
+                </label>
+                {originalResumeBackup ? (
+                  <button
+                    type="button"
+                    onClick={handleRestoreOriginalResume}
+                    className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                  >
+                    Restore Original Resume
+                  </button>
+                ) : null}
+              </div>
+
+              {premiumAiResult ? (
+                <>
+                  {(premiumAiFeature === "resume_rewrite_pro" ||
+                    premiumAiFeature === "advanced_ats_strategy") && (
+                    <button
+                      onClick={handleApplyPremiumAiResult}
+                      disabled={isApplyingPremiumAi}
+                      className="mb-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      {isApplyingPremiumAi ? "Applying..." : "Apply to Resume"}
+                    </button>
+                  )}
+                  <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
+                    {JSON.stringify(premiumAiResult, null, 2)}
+                  </pre>
+                </>
               ) : null}
             </div>
 
@@ -1436,6 +1701,53 @@ export default function ResumeEditorPage() {
                 >
                   Upgrade Now
                 </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {noticeModal.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-gray-200 mx-4 overflow-hidden">
+            <div
+              className={`px-5 py-4 ${
+                noticeModal.tone === "success"
+                  ? "bg-emerald-50 border-b border-emerald-100"
+                  : noticeModal.tone === "error"
+                  ? "bg-rose-50 border-b border-rose-100"
+                  : "bg-blue-50 border-b border-blue-100"
+              }`}
+            >
+              <h4
+                className={`text-sm font-semibold ${
+                  noticeModal.tone === "success"
+                    ? "text-emerald-800"
+                    : noticeModal.tone === "error"
+                    ? "text-rose-800"
+                    : "text-blue-800"
+                }`}
+              >
+                {noticeModal.title}
+              </h4>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{noticeModal.message}</p>
+              <div className="mt-4 flex justify-end">
+                {noticeModal.actionHref && noticeModal.actionLabel ? (
+                  <Link
+                    href={noticeModal.actionHref}
+                    className="mr-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {noticeModal.actionLabel}
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setNoticeModal((prev) => ({ ...prev, open: false }))}
+                  className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  OK
+                </button>
               </div>
             </div>
           </div>

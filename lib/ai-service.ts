@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { z } from "zod";
 
 // Check if providers are enabled via environment flags
 const useAnthropic = process.env.USE_ANTHROPIC !== 'false';
@@ -355,4 +356,300 @@ Requirements:
     console.error('Error generating cover letter:', error);
     throw new Error('Failed to generate cover letter');
   }
+}
+
+export type PremiumAiFeature =
+  | "resume_rewrite_pro"
+  | "job_match_scoring"
+  | "interview_simulation"
+  | "salary_negotiation_scripts"
+  | "advanced_ats_strategy";
+
+export type PremiumAiRunInput = {
+  feature: PremiumAiFeature;
+  resume: {
+    personalInfo?: Record<string, any>;
+    professionalSummary?: string;
+    experiences?: Array<Record<string, any>>;
+    education?: Array<Record<string, any>>;
+    skills?: { technical?: string[]; soft?: string[] };
+    keywords?: string[];
+  };
+  jobDescription?: string;
+  targetRole?: string;
+  contextNote?: string;
+};
+
+const resumeRewriteProSchema = z.object({
+  headline: z.string().optional().default(""),
+  professionalSummary: z.string().default(""),
+  experienceRewrites: z
+    .array(
+      z.object({
+        role: z.string().default(""),
+        company: z.string().default(""),
+        improvedBullets: z.array(z.string()).default([]),
+      })
+    )
+    .default([]),
+  highImpactEdits: z.array(z.string()).default([]),
+});
+
+const jobMatchScoringSchema = z.object({
+  score: z.number().min(0).max(100),
+  verdict: z.enum(["low", "medium", "high"]),
+  strengths: z.array(z.string()).default([]),
+  gaps: z
+    .array(
+      z.object({
+        theme: z.string(),
+        whyItMatters: z.string(),
+        whereToAdd: z.enum(["summary", "experience", "skills"]),
+        suggestedBullet: z.string().default(""),
+      })
+    )
+    .default([]),
+  matchedSignals: z.array(z.string()).default([]),
+});
+
+const interviewSimulationSchema = z.object({
+  interviewType: z.enum(["phone", "hiring-manager", "onsite"]),
+  questions: z
+    .array(
+      z.object({
+        question: z.string(),
+        whatStrongAnswerIncludes: z.array(z.string()).default([]),
+        followUps: z.array(z.string()).default([]),
+      })
+    )
+    .default([]),
+  coachTips: z.array(z.string()).default([]),
+});
+
+const salaryNegotiationSchema = z.object({
+  targetCompensationStrategy: z.object({
+    anchor: z.string(),
+    justificationPoints: z.array(z.string()).default([]),
+  }),
+  emailScript: z.string(),
+  liveCallScript: z.array(z.string()).default([]),
+  fallbackOptions: z.array(z.string()).default([]),
+});
+
+const advancedAtsStrategySchema = z.object({
+  priorityActions: z
+    .array(
+      z.object({
+        title: z.string(),
+        impact: z.enum(["high", "medium", "low"]),
+        reason: z.string(),
+        implementation: z.string(),
+      })
+    )
+    .default([]),
+  parseabilityChecks: z.array(z.string()).default([]),
+  contentStrategy: z.array(z.string()).default([]),
+  quickWins: z.array(z.string()).default([]),
+  suggestedSummary: z.string().optional(),
+  suggestedSkillKeywords: z.array(z.string()).optional(),
+  experienceBulletPatches: z
+    .array(
+      z.object({
+        role: z.string().default(""),
+        company: z.string().default(""),
+        addBullets: z.array(z.string()).default([]),
+      })
+    )
+    .optional(),
+});
+
+export type ResumeRewriteProResult = z.infer<typeof resumeRewriteProSchema>;
+export type JobMatchScoringResult = z.infer<typeof jobMatchScoringSchema>;
+export type InterviewSimulationResult = z.infer<typeof interviewSimulationSchema>;
+export type SalaryNegotiationResult = z.infer<typeof salaryNegotiationSchema>;
+export type AdvancedAtsStrategyResult = z.infer<typeof advancedAtsStrategySchema>;
+export type PremiumAiResult =
+  | ResumeRewriteProResult
+  | JobMatchScoringResult
+  | InterviewSimulationResult
+  | SalaryNegotiationResult
+  | AdvancedAtsStrategyResult;
+
+function extractJson(text: string) {
+  const fenced =
+    text.match(/```json\s*([\s\S]*?)\s*```/i) ||
+    text.match(/```\s*([\s\S]*?)\s*```/);
+  return fenced?.[1] || text;
+}
+
+function resumeContextText(resume: PremiumAiRunInput["resume"]) {
+  const personal = resume.personalInfo || {};
+  const experiences = Array.isArray(resume.experiences) ? resume.experiences : [];
+  const education = Array.isArray(resume.education) ? resume.education : [];
+  const technical = Array.isArray(resume.skills?.technical) ? resume.skills?.technical : [];
+  const soft = Array.isArray(resume.skills?.soft) ? resume.skills?.soft : [];
+
+  return `CANDIDATE
+Name: ${personal.name || "Unknown"}
+Headline: ${personal.headline || ""}
+Location: ${personal.location || ""}
+
+SUMMARY
+${resume.professionalSummary || ""}
+
+EXPERIENCE
+${experiences
+  .map((exp, index) => {
+    const bullets = Array.isArray(exp?.optimizedBullets)
+      ? exp.optimizedBullets
+      : exp?.description
+      ? [exp.description]
+      : [];
+    return `${index + 1}. ${exp?.title || ""} @ ${exp?.company || ""}
+Dates: ${exp?.startDate || ""} - ${exp?.current ? "Present" : exp?.endDate || ""}
+Bullets:
+${bullets.map((bullet: string) => `- ${bullet}`).join("\n")}`;
+  })
+  .join("\n\n")}
+
+EDUCATION
+${education
+  .map((item, index) => `${index + 1}. ${item?.degree || ""} - ${item?.institution || ""} (${item?.graduationDate || ""})`)
+  .join("\n")}
+
+SKILLS
+Technical: ${technical.join(", ")}
+Soft: ${soft.join(", ")}
+Keywords: ${(resume.keywords || []).join(", ")}`;
+}
+
+export async function runPremiumAiFeature(input: PremiumAiRunInput) {
+  const resumeText = resumeContextText(input.resume);
+  const jobText = input.jobDescription || "";
+  const roleText = input.targetRole || input.resume.personalInfo?.headline || "";
+  const note = input.contextNote?.trim() || "";
+
+  let taskInstruction = "";
+  let jsonShape = "";
+
+  if (input.feature === "resume_rewrite_pro") {
+    taskInstruction = `Rewrite the resume at premium quality for ATS + recruiter readability.
+- Keep truthfulness (no fabricated facts).
+- Produce stronger summary and stronger bullets with action + impact.
+- Preserve candidate voice and role level.`;
+    jsonShape = `{
+  "headline": "optional improved headline",
+  "professionalSummary": "improved summary",
+  "experienceRewrites": [
+    {
+      "role": "role",
+      "company": "company",
+      "improvedBullets": ["bullet 1", "bullet 2", "bullet 3"]
+    }
+  ],
+  "highImpactEdits": ["edit 1", "edit 2", "edit 3"]
+}`;
+  } else if (input.feature === "job_match_scoring") {
+    taskInstruction = `Score semantic job-match quality between resume and target role/JD.
+- Use semantic similarity, not only exact keywords.
+- Explain strengths and gaps.
+- Include insertion suggestions for missing themes.`;
+    jsonShape = `{
+  "score": 0,
+  "verdict": "low|medium|high",
+  "strengths": ["strength 1", "strength 2"],
+  "gaps": [
+    {
+      "theme": "missing theme",
+      "whyItMatters": "reason",
+      "whereToAdd": "summary|experience|skills",
+      "suggestedBullet": "concrete bullet"
+    }
+  ],
+  "matchedSignals": ["signal 1", "signal 2"]
+}`;
+  } else if (input.feature === "interview_simulation") {
+    taskInstruction = `Generate a realistic interview simulation pack.
+- Include technical + behavioral + role-fit questions.
+- Provide what a strong answer should include.
+- Add follow-up probes.`;
+    jsonShape = `{
+  "interviewType": "phone|hiring-manager|onsite",
+  "questions": [
+    {
+      "question": "question text",
+      "whatStrongAnswerIncludes": ["point 1", "point 2"],
+      "followUps": ["follow up 1", "follow up 2"]
+    }
+  ],
+  "coachTips": ["tip 1", "tip 2"]
+}`;
+  } else if (input.feature === "salary_negotiation_scripts") {
+    taskInstruction = `Generate salary negotiation scripts personalized to this profile.
+- Include email script and live-call script.
+- Include anchor, walk-away framing, and non-cash levers.
+- Keep tone professional and assertive.`;
+    jsonShape = `{
+  "targetCompensationStrategy": {
+    "anchor": "anchor statement",
+    "justificationPoints": ["point 1", "point 2"]
+  },
+  "emailScript": "ready-to-send email",
+  "liveCallScript": ["line 1", "line 2", "line 3"],
+  "fallbackOptions": ["option 1", "option 2"]
+}`;
+  } else {
+    taskInstruction = `Produce advanced ATS strategy recommendations with prioritized fixes.
+- Separate parseability issues from content-quality issues.
+- Give concrete before/after examples.
+- Focus on highest ROI edits first.`;
+    jsonShape = `{
+  "priorityActions": [
+    {
+      "title": "action",
+      "impact": "high|medium|low",
+      "reason": "why",
+      "implementation": "exact change"
+    }
+  ],
+  "parseabilityChecks": ["check 1", "check 2"],
+  "contentStrategy": ["strategy 1", "strategy 2"],
+  "quickWins": ["quick win 1", "quick win 2"],
+  "suggestedSummary": "optional improved summary",
+  "suggestedSkillKeywords": ["keyword 1", "keyword 2"],
+  "experienceBulletPatches": [
+    {
+      "role": "role",
+      "company": "company",
+      "addBullets": ["new bullet 1", "new bullet 2"]
+    }
+  ]
+}`;
+  }
+
+  const systemPrompt = `You are a senior career strategist and resume expert. Return only valid JSON. Do not include markdown.`;
+  const userPrompt = `${taskInstruction}
+
+TARGET ROLE
+${roleText}
+
+JOB DESCRIPTION
+${jobText}
+
+ADDITIONAL CONTEXT
+${note}
+
+RESUME DATA
+${resumeText}
+
+Return ONLY JSON in this shape:
+${jsonShape}`;
+
+  const raw = await callAI(systemPrompt, userPrompt, { maxTokens: 2200, jsonMode: true });
+  const parsed = JSON.parse(extractJson(raw));
+  if (input.feature === "resume_rewrite_pro") return resumeRewriteProSchema.parse(parsed);
+  if (input.feature === "job_match_scoring") return jobMatchScoringSchema.parse(parsed);
+  if (input.feature === "interview_simulation") return interviewSimulationSchema.parse(parsed);
+  if (input.feature === "salary_negotiation_scripts") return salaryNegotiationSchema.parse(parsed);
+  return advancedAtsStrategySchema.parse(parsed);
 }
